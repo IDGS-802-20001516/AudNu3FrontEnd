@@ -44,17 +44,17 @@ const Navbar: React.FC<NavbarProps> = ({ onLogout }) => {
     if (userRole === 4 || userRole === 5) {
       return { background: "#007bff" }; // Azul para roles 4 y 5
     }
-    return { background: "linear-gradient(to right, #800020, #a10a28)" }; // Gradiente rojizo
+    return { background: "linear-gradient(to right, #800020, #a10a28)" }; 
   };
 
-  // Mostrar dropdown al pasar el cursor o dejarlo un segundo
+ 
   const handleMouseEnter = (dropdown: string) => {
     if (timeoutId) {
-      clearTimeout(timeoutId); // Limpiar cualquier timeout previo
+      clearTimeout(timeoutId); 
     }
     const newTimeout = setTimeout(() => {
       setDropdownOpen(dropdown);
-    }, 1000); // 1 segundo de retraso
+    }, 1000); 
     setTimeoutId(newTimeout);
   };
 
