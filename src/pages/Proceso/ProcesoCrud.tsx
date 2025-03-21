@@ -73,7 +73,7 @@ const ProcesoCRUD: React.FC = () => {
 
       {/* Botón para abrir el modal de creación */}
       <div className="mb-4 text-end">
-        <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>
+        <button className="btn" style={{backgroundColor:'#800020',color:'white'}} onClick={() => setShowCreateModal(true)}>
           Agregar Proceso
         </button>
       </div>

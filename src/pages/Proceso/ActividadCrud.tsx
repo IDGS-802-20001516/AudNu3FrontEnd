@@ -10,7 +10,7 @@ import Swal from 'sweetalert2';
 const ActividadCRUD: React.FC = () => {
   const [actividades, setActividades] = useState<Actividad[]>([]);
   const [procesos, setProcesos] = useState<Proceso[]>([]);
-  const [newActividad, setNewActividad] = useState<Actividad>({ nombreActividad: "", idProceso: 0,criterio:"" });
+  const [newActividad, setNewActividad] = useState<Actividad>({ nombreActividad: "", idProceso: 0, criterio: "" });
   const [editingActividad, setEditingActividad] = useState<Actividad | null>(null);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -39,7 +39,7 @@ const ActividadCRUD: React.FC = () => {
     try {
       const createdActividad = await createActividad(newActividad);
       setActividades([...actividades, createdActividad]);
-      setNewActividad({ nombreActividad: "", criterio:"",idProceso: procesos[0]?.idProceso || 0 });
+      setNewActividad({ nombreActividad: "", criterio: "", idProceso: procesos[0]?.idProceso || 0 });
       setShowCreateModal(false);
     } catch (error) {
       console.error("Error al crear actividad:", error);
@@ -100,7 +100,7 @@ const ActividadCRUD: React.FC = () => {
 
       {/* Botón para abrir el modal de creación */}
       <div className="mb-4 text-end">
-        <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>
+        <button className="btn " style={{color:'white',backgroundColor:'#800020'}} onClick={() => setShowCreateModal(true)}>
           Agregar Actividad
         </button>
       </div>
@@ -111,51 +111,53 @@ const ActividadCRUD: React.FC = () => {
           <h5 className="card-title mb-0 fw-bold">Lista de Actividades</h5>
         </div>
         <div className="card-body">
-          <table className="table table-striped table-hover">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Nombre de la Actividad</th>
-                <th>Criterio</th>
-                <th>Proceso</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {actividades.map((actividad) => (
-                <tr key={actividad.idActividad}>
-                  <td>{actividad.idActividad}</td>
-                  <td>{actividad.nombreActividad}</td>
-                  <td>{actividad.criterio}</td>
-                  <td>{procesos.find((p) => p.idProceso === actividad.idProceso)?.nombreProceso || "Sin Proceso"}</td>
-                    <td className="d-flex justify-content-around">
-                    <button
-                      className="btn btn-warning btn-sm me-2"
-                      onClick={() => {
-                      setEditingActividad(actividad);
-                      setShowEditModal(true);
-                      }}
-                    >
-                      <FaEdit />
-                    </button>
-                    <button
-                      className="btn btn-danger btn-sm"
-                      onClick={() => handleDelete(actividad.idActividad!)}
-                    >
-                      <FaTrash />
-                    </button>
-                    </td>
+          <div className="table-responsive">
+            <table className="table table-striped table-hover">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nombre de la Actividad</th>
+                  <th>Criterio</th>
+                  <th>Proceso</th>
+                  <th>Acciones</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {actividades.map((actividad) => (
+                  <tr key={actividad.idActividad} className="actividad-row">
+                    <td data-label="ID">{actividad.idActividad}</td>
+                    <td data-label="Nombre de la Actividad">{actividad.nombreActividad}</td>
+                    <td data-label="Criterio">{actividad.criterio}</td>
+                    <td data-label="Proceso">{procesos.find((p) => p.idProceso === actividad.idProceso)?.nombreProceso || "Sin Proceso"}</td>
+                    <td data-label="Acciones" className="d-flex justify-content-around">
+                      <button
+                        className="btn btn-warning btn-sm me-2"
+                        onClick={() => {
+                          setEditingActividad(actividad);
+                          setShowEditModal(true);
+                        }}
+                      >
+                        <FaEdit />
+                      </button>
+                      <button
+                        className="btn btn-danger btn-sm"
+                        onClick={() => handleDelete(actividad.idActividad!)}
+                      >
+                        <FaTrash />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
       {/* Modal para agregar actividad */}
       {showCreateModal && (
         <div className="modal fade show d-block" tabIndex={-1} style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
-          <div className="modal-dialog">
+          <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">Agregar Nueva Actividad</h5>
@@ -217,7 +219,7 @@ const ActividadCRUD: React.FC = () => {
       {/* Modal para editar actividad */}
       {showEditModal && editingActividad && (
         <div className="modal fade show d-block" tabIndex={-1} style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
-          <div className="modal-dialog">
+          <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">Editar Actividad</h5>

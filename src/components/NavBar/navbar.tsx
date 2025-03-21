@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import Logo from "../../assets/NU3B.png";
-import { NavDropdown } from "react-bootstrap";
 import "./navbar.css";
 import "bootstrap/dist/css/bootstrap.min.css";
-
+import { FaHome, FaChartBar, FaClipboardList, FaBuilding, FaUsers, FaCogs, FaSignOutAlt, FaTachometerAlt, FaChartLine, FaSearch, FaThumbtack, FaUserCircle, FaListOl, FaLock, FaUnlock } from "react-icons/fa";
+import Logo from "../../assets/NU3B.png";
 interface NavbarProps {
   onLogout: () => void;
 }
@@ -12,17 +11,16 @@ interface NavbarProps {
 const Navbar: React.FC<NavbarProps> = ({ onLogout }) => {
   const [userName, setUserName] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<number | null>(null);
+  const [isNavOpen, setIsNavOpen] = useState(false);
+  const [isPinned, setIsPinned] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const [dropdownOpen, setDropdownOpen] = useState<string | null>(null);
-  const [timeoutId, setTimeoutId] = useState<number | null>(null); // Cambiado de NodeJS.Timeout a number
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
       try {
         const decodedToken = JSON.parse(atob(token.split(".")[1]));
-        console.log("Decoded Token:", decodedToken);
         setUserName(decodedToken.name || "Usuario");
         setUserRole(Number(decodedToken.sid));
       } catch (error) {
@@ -39,33 +37,11 @@ const Navbar: React.FC<NavbarProps> = ({ onLogout }) => {
     navigate("/login");
   };
 
-  // Determinar el estilo de la navbar según el rol
   const getNavbarStyle = () => {
     if (userRole === 4 || userRole === 5) {
-      return { background: "#007bff" }; // Azul para roles 4 y 5
+      return { background: "linear-gradient(to right,rgb(230, 98, 131),rgb(139, 9, 9)" };
     }
-    return { background: "linear-gradient(to right, #800020, #a10a28)" }; 
-  };
-
- 
-  const handleMouseEnter = (dropdown: string) => {
-    if (timeoutId) {
-      clearTimeout(timeoutId); 
-    }
-    const newTimeout = setTimeout(() => {
-      setDropdownOpen(dropdown);
-    }, 1000); 
-    setTimeoutId(newTimeout);
-  };
-
-  const handleMouseLeave = () => {
-    if (timeoutId) {
-      clearTimeout(timeoutId); // Limpiar el timeout de apertura
-    }
-    const closeTimeout = setTimeout(() => {
-      setDropdownOpen(null);
-    }, 300); // Retraso de 300ms para cerrar
-    setTimeoutId(closeTimeout);
+    return { background: "linear-gradient(to right, #800020, #a10a28)" };
   };
 
   const renderNavLinks = () => {
@@ -73,153 +49,113 @@ const Navbar: React.FC<NavbarProps> = ({ onLogout }) => {
       return (
         <>
           <Link
-            className={`nav-link text-light fw-medium ${
-              location.pathname === "/hallazgos" ? "active" : ""
-            }`}
+            className={`nav-link ${location.pathname === "/hallazgos" ? "active" : ""}`}
             to="/hallazgos"
           >
-            Hallazgos
+            <FaClipboardList className="nav-icon" />
+            <span className="nav-text">Hallazgos</span>
+            {location.pathname === "/hallazgos" && <span className="dot"></span>}
           </Link>
           <Link
-            className={`nav-link text-light fw-medium ${
-              location.pathname === "/welcomeB" ? "active" : ""
-            }`}
+            className={`nav-link ${location.pathname === "/welcomeB" ? "active" : ""}`}
             to="/welcomeB"
           >
-            Home
+            <FaHome className="nav-icon" />
+            <span className="nav-text">Home</span>
+            {location.pathname === "/welcomeB" && <span className="dot"></span>}
           </Link>
         </>
       );
     } else if (userRole === 1 || userRole === 2 || userRole === 3) {
       return (
         <>
-          {/* Dropdown para Dashboards */}
-          <NavDropdown
-            title="Dashboards"
-            id="dashboards-dropdown"
-            className="text-light fw-medium dropdown-spacing"
-            show={dropdownOpen === "dashboards"}
-            onMouseEnter={() => handleMouseEnter("dashboards")}
-            onMouseLeave={handleMouseLeave}
-            onToggle={() => {}}
+          {/* Dashboards */}
+          <Link
+            to="/dashboard"
+            className={`nav-link ${location.pathname === "/dashboard" ? "active" : ""}`}
           >
-            <NavDropdown.Item
-              as={Link}
-              to="/dashboard"
-              className={location.pathname === "/dashboard" ? "active" : ""}
-              style={{ backgroundColor: "#a10a28", color: "#fff" }}
-            >
-              Dashboard General
-            </NavDropdown.Item>
-            <NavDropdown.Item
-              as={Link}
-              to="/dashboardh"
-              className={location.pathname === "/dashboardh" ? "active" : ""}
-              style={{ backgroundColor: "#a10a28", color: "#fff" }}
-            >
-              Dashboard Hallazgos
-            </NavDropdown.Item>
-            <NavDropdown.Item
-              as={Link}
-              to="/dashboardPA"
-              className={location.pathname === "/dashboardPA" ? "active" : ""}
-              style={{ backgroundColor: "#a10a28", color: "#fff" }}
-            >
-              Dashboard Procesos
-            </NavDropdown.Item>
-          </NavDropdown>
+            <FaTachometerAlt className="nav-icon" />
+            <span className="nav-text ">Dashboard General</span>
+            {location.pathname === "/dashboard" && <span className="dot"></span>}
+          </Link>
+          <Link
+            to="/dashboardh"
+            className={`nav-link ${location.pathname === "/dashboardh" ? "active" : ""}`}
+          >
+            <FaChartLine className="nav-icon" />
+            <span className="nav-text">Dashboard Hallazgos</span>
+            {location.pathname === "/dashboardh" && <span className="dot"></span>}
+          </Link>
+          <Link
+            to="/dashboardPA"
+            className={`nav-link ${location.pathname === "/dashboardPA" ? "active" : ""}`}
+          >
+            <FaChartBar className="nav-icon" />
+            <span className="nav-text">Dashboard Procesos</span>
+            {location.pathname === "/dashboardPA" && <span className="dot"></span>}
+          </Link>
 
-          {/* Dropdown para Auditorías */}
-          <NavDropdown
-            title="Auditorías"
-            id="auditorias-dropdown"
-            className="text-light fw-medium dropdown-spacing"
-            show={dropdownOpen === "auditorias"}
-            onMouseEnter={() => handleMouseEnter("auditorias")}
-            onMouseLeave={handleMouseLeave}
-            onToggle={() => {}}
+          {/* Auditorías */}
+          <Link
+            to="/planaud"
+            className={`nav-link ${location.pathname === "/planaud" ? "active" : ""}`}
           >
-            <NavDropdown.Item
-              as={Link}
-              to="/planaud"
-              className={location.pathname === "/planaud" ? "active" : ""}
-              style={{ backgroundColor: "#a10a28", color: "#fff" }}
-            >
-              Plan de Auditoría
-            </NavDropdown.Item>
-            <NavDropdown.Item
-              as={Link}
-              to="/hallazgos"
-              className={location.pathname === "/hallazgos" ? "active" : ""}
-              style={{ backgroundColor: "#a10a28", color: "#fff" }}
-            >
-              Hallazgos
-            </NavDropdown.Item>
-            <NavDropdown.Item
-              as={Link}
-              to="/auditorias"
-              className={location.pathname === "/auditorias" ? "active" : ""}
-              style={{ backgroundColor: "#a10a28", color: "#fff" }}
-            >
-              Auditorías
-            </NavDropdown.Item>
-          </NavDropdown>
+            <FaClipboardList className="nav-icon" />
+            <span className="nav-text">Plan de Auditoría</span>
+            {location.pathname === "/planaud" && <span className="dot"></span>}
+          </Link>
+          <Link
+            to="/hallazgos"
+            className={`nav-link ${location.pathname === "/hallazgos" ? "active" : ""}`}
+          >
+            <FaSearch className="nav-icon" />
+            <span className="nav-text">Hallazgos</span>
+            {location.pathname === "/hallazgos" && <span className="dot"></span>}
+          </Link>
+          <Link
+            to="/auditorias"
+            className={`nav-link ${location.pathname === "/auditorias" ? "active" : ""}`}
+          >
+            <FaThumbtack className="nav-icon" />
+            <span className="nav-text">Auditorías</span>
+            {location.pathname === "/auditorias" && <span className="dot"></span>}
+          </Link>
 
-          {/* Dropdown para Empresas y Usuarios */}
-          <NavDropdown
-            title="Empresas y Usuarios"
-            id="empresas-usuarios-dropdown"
-            className="text-light fw-medium dropdown-spacing"
-            show={dropdownOpen === "empresasUsuarios"}
-            onMouseEnter={() => handleMouseEnter("empresasUsuarios")}
-            onMouseLeave={handleMouseLeave}
-            onToggle={() => {}}
+          {/* Empresas y Usuarios */}
+          <Link
+            to="/empresas"
+            className={`nav-link ${location.pathname === "/empresas" ? "active" : ""}`}
           >
-            <NavDropdown.Item
-              as={Link}
-              to="/empresas"
-              className={location.pathname === "/empresas" ? "active" : ""}
-              style={{ backgroundColor: "#a10a28", color: "#fff" }}
-            >
-              Empresas
-            </NavDropdown.Item>
-            <NavDropdown.Item
-              as={Link}
-              to="/usuarios"
-              className={location.pathname === "/usuarios" ? "active" : ""}
-              style={{ backgroundColor: "#a10a28", color: "#fff" }}
-            >
-              Usuarios
-            </NavDropdown.Item>
-          </NavDropdown>
+            <FaBuilding className="nav-icon" />
+            <span className="nav-text">Empresas</span>
+            {location.pathname === "/empresas" && <span className="dot"></span>}
+          </Link>
+          <Link
+            to="/usuarios"
+            className={`nav-link ${location.pathname === "/usuarios" ? "active" : ""}`}
+          >
+            <FaUserCircle className="nav-icon" />
+            <span className="nav-text">Usuarios</span>
+            {location.pathname === "/usuarios" && <span className="dot"></span>}
+          </Link>
 
-          {/* Dropdown para Gestión de Procesos */}
-          <NavDropdown
-            title="Gestión de Procesos"
-            id="procesos-dropdown"
-            className="text-light fw-medium dropdown-spacing"
-            show={dropdownOpen === "gestionProcesos"}
-            onMouseEnter={() => handleMouseEnter("gestionProcesos")}
-            onMouseLeave={handleMouseLeave}
-            onToggle={() => {}}
+          {/* Gestión de Procesos */}
+          <Link
+            to="/procesos"
+            className={`nav-link ${location.pathname === "/procesos" ? "active" : ""}`}
           >
-            <NavDropdown.Item
-              as={Link}
-              to="/procesos"
-              className={location.pathname === "/procesos" ? "active" : ""}
-              style={{ backgroundColor: "#a10a28", color: "#fff" }}
-            >
-              Procesos
-            </NavDropdown.Item>
-            <NavDropdown.Item
-              as={Link}
-              to="/actividades"
-              className={location.pathname === "/actividades" ? "active" : ""}
-              style={{ backgroundColor: "#a10a28", color: "#fff" }}
-            >
-              Actividades
-            </NavDropdown.Item>
-          </NavDropdown>
+            <FaCogs className="nav-icon" />
+            <span className="nav-text">Procesos</span>
+            {location.pathname === "/procesos" && <span className="dot"></span>}
+          </Link>
+          <Link
+            to="/actividades"
+            className={`nav-link ${location.pathname === "/actividades" ? "active" : ""}`}
+          >
+            <FaListOl className="nav-icon" />
+            <span className="nav-text">Actividades</span>
+            {location.pathname === "/actividades" && <span className="dot"></span>}
+          </Link>
         </>
       );
     }
@@ -227,49 +163,62 @@ const Navbar: React.FC<NavbarProps> = ({ onLogout }) => {
   };
 
   return (
-    <nav
-      className="navbar navbar-expand-lg navbar-dark shadow-sm py-2"
-      style={getNavbarStyle()} // Aplicar el estilo dinámico
-    >
-      <div className="container-fluid">
-        <Link className="navbar-brand d-flex align-items-center" to="/">
-          <img
-            src={Logo}
-            alt="Logo"
-            style={{ height: "40px", marginRight: "10px" }}
-          />
-          <span className="fw-bold fs-5" style={{ color: "#fff" }}>
-            Auditoría Interna
-          </span>
-        </Link>
+    <>
+      <button
+        className="navbar-toggle-btn external-toggle"
+        onClick={() => setIsNavOpen(!isNavOpen)}
+      >
+        ☰
+      </button>
 
-        <button
-          className="navbar-toggler"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#navbarNav"
-          aria-controls="navbarNav"
-          aria-expanded="false"
-          aria-label="Toggle navigation"
-        >
-          <span className="navbar-toggler-icon"></span>
-        </button>
-
-        <div className="collapse navbar-collapse" id="navbarNav">
-          <div className="navbar-nav me-auto">{renderNavLinks()}</div>
-          <div className="d-flex align-items-center">
-            <span className="text-light me-3 fw-medium">👤 {userName}</span>
-            <button
-              className="btn btn-light btn-sm fw-medium shadow-sm"
-              onClick={handleLogout}
-              style={{ color: "#800020", backgroundColor: "#fff" }}
+      <nav
+        className={`sidebar-nav ${isNavOpen ? "open" : ""}`}
+        style={getNavbarStyle()}
+        onMouseEnter={() => !isPinned && setIsNavOpen(true)}
+        onMouseLeave={() => !isPinned && setIsNavOpen(false)}
+      >
+        <div className="sidebar-header">
+            <Link
+            className="navbar-brand d-flex flex-column align-items-center text-center"
+            to="/"
+            onClick={() => setIsNavOpen(true)}
             >
-              Cerrar sesión
+            <img
+              src={Logo}
+              alt="NU3B"
+              className="logo"
+              style={{ maxHeight: "60px", marginBottom: "10px" ,marginTop: "30px"}}
+            />
+            <span className="brand-label">Auditoría Interna</span>
+            </Link>
+          <div className="header-buttons">
+            <button
+              className="navbar-pin-btn"
+              onClick={() => setIsPinned(!isPinned)}
+            >
+              {isPinned ? <FaLock /> : <FaUnlock />}
             </button>
           </div>
         </div>
-      </div>
-    </nav>
+
+        <div className="sidebar-content">
+          <div className="nav-links">{renderNavLinks()}</div>
+          <div className="user-section">
+            <span className="text-light fw-medium">
+              <FaUsers className="nav-icon" />
+              <span className="nav-text">{userName}</span>
+            </span>
+            <button
+              className="nav-link logout-btn"
+              onClick={handleLogout}
+            >
+              <FaSignOutAlt className="nav-icon" />
+              <span className="nav-text">Cerrar sesión</span>
+            </button>
+          </div>
+        </div>
+      </nav>
+    </>
   );
 };
 

@@ -1,48 +1,191 @@
-.navbar .nav-link,
-.navbar .dropdown-toggle {
-  color: #fff !important;
-  font-weight: 500;
-  transition: color 0.3s ease;
+/* External toggle button */
+.navbar-toggle-btn.external-toggle {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 1000;
+  background: #800020;
+  color: white;
+  border: 1px solid #fff;
+  padding: 4px 8px;
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.3s ease;
 }
 
-.navbar .dropdown-toggle:hover {
-  color: #f2dede !important; /* Rojo claro para hover */
+.navbar-toggle-btn.external-toggle:hover {
+  background: #a10a28;
+  transform: scale(1.1);
 }
 
-.navbar .dropdown-menu {
-  background-color: #a10a28;
+.sidebar-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  color: bisque;
+  height: 100vh;
+  width: 250px; /* Always expanded, no narrow state */
+  z-index: 999;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.2);
+  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-nav.open {
+  left: 0;
+}
+
+.sidebar-nav:not(.open) {
+  left: -250px; /* Hide completely when not open */
+}
+
+.sidebar-header {
+  padding-bottom: 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: transform 0.3s ease;
+}
+
+.sidebar-header:hover {
+  transform: translateX(3px);
+}
+
+.header-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.navbar-pin-btn {
+  background: none;
   border: none;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  min-width: 200px;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  opacity: 0.7;
 }
 
-.navbar .dropdown-item {
+.navbar-pin-btn:hover {
+  transform: scale(1.1);
+  opacity: 1;
+}
+
+.sidebar-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-top: 15px;
+}
+
+.nav-links {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nav-link {
   color: #fff;
   font-weight: 500;
-  padding: 8px 16px;
-  transition: background-color 0.3s ease;
+  padding: 8px 12px;
+  text-decoration: none;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.navbar .dropdown-item:hover {
-  background-color: #800020;
-  color: #f2dede;
+
+
+@keyframes bounce {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+  100% { transform: translateY(0); }
 }
 
-.navbar .dropdown-item.active {
-  background-color: #800020;
-  color: #fff !important;
+.nav-link {
+  display: inline-block;
+  transition: background 0.3s ease-in-out;
 }
 
-.navbar .navbar-brand span {
-  color: #fff !important;
+.nav-link:hover {
+  background: rgba(110, 4, 4, 0.945);
+  animation: bounce 0.5s ease-in-out;
 }
 
-/* Aumentar el espacio entre los dropdowns */
-.dropdown-spacing {
-  margin-right: 20px !important; /* Espacio entre los dropdowns */
+
+.nav-link.active {
+  background: rgb(52, 48, 48);
+  color: yellowgreen;
+  padding: 10px;
+  
 }
 
-/* Ajustar el padding del título del dropdown para reducir el área activa */
-.navbar .dropdown-toggle {
-  padding: 8px 12px !important; /* Reducir el área activa */
+.nav-icon {
+  font-size: 15px;
+}
+
+.brand-label{
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 10px;
+}
+.nav-text {
+  display: inline;
+  margin-left: 10px;
+}
+
+/* Dot indicator */
+.dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: red;
+  border-radius: 50%;
+  margin-left: 8px; /* Space after the text */
+}
+
+.user-section {
+  padding-top: 15px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.user-section .text-light {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.logout-btn {
+  background: none;
+  border: none;
+  color: #fff;
+  font-weight: 500;
+  padding: 8px 12px;
+  text-decoration: none;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logout-btn:hover {
+  background: rgba(240, 4, 4, 0.2);
 }
