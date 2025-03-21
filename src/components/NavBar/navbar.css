@@ -1,0 +1,48 @@
+.navbar .nav-link,
+.navbar .dropdown-toggle {
+  color: #fff !important;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.navbar .dropdown-toggle:hover {
+  color: #f2dede !important; /* Rojo claro para hover */
+}
+
+.navbar .dropdown-menu {
+  background-color: #a10a28;
+  border: none;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  min-width: 200px;
+}
+
+.navbar .dropdown-item {
+  color: #fff;
+  font-weight: 500;
+  padding: 8px 16px;
+  transition: background-color 0.3s ease;
+}
+
+.navbar .dropdown-item:hover {
+  background-color: #800020;
+  color: #f2dede;
+}
+
+.navbar .dropdown-item.active {
+  background-color: #800020;
+  color: #fff !important;
+}
+
+.navbar .navbar-brand span {
+  color: #fff !important;
+}
+
+/* Aumentar el espacio entre los dropdowns */
+.dropdown-spacing {
+  margin-right: 20px !important; /* Espacio entre los dropdowns */
+}
+
+/* Ajustar el padding del título del dropdown para reducir el área activa */
+.navbar .dropdown-toggle {
+  padding: 8px 12px !important; /* Reducir el área activa */
+}

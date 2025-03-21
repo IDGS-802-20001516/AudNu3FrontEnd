@@ -1,0 +1,31 @@
+
+
+
+.card{
+    background-color: white;
+    border-color: black;
+    border-style: double;
+   
+   color: black;
+}
+
+.card-text{
+    color: black;
+   
+}
+
+.nombre-rol-container {
+    margin-left: 30px; /* Ajusta este valor según sea necesario */
+  }
+
+.card-hover {
+    transition: transform 0.2s ease-in-out;
+    background-color: "#292424"; /* Color claro que combina con el fondo blanco */
+  }
+  .card-hover:hover {
+    transform: scale(1.05); /* Efecto de zoom */
+  }
+
+  :root{
+    font-family: 'Times New Roman', Times, serif;
+  }
