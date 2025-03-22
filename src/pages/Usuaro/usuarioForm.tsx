@@ -21,7 +21,7 @@ const UsuarioForm: React.FC<UsuarioFormModalProps> = ({ idUsuario, show, handleC
     correo: "",
     contrasenia: "",
     idRol: 0,
-    estatus: "",
+    estatus: true,
     telefono: "",
     intentos: 0,
     token: "",
@@ -80,9 +80,9 @@ const UsuarioForm: React.FC<UsuarioFormModalProps> = ({ idUsuario, show, handleC
     else if (!emailRegex.test(usuario.correo)) newErrors.correo = "El correo no es válido.";
 
     if (!idUsuario && !usuario.contrasenia.trim()) {
-      newErrors.contrasenia = "La contraseña es obligatoria.";
+      newErrors.contrasenia = "La contraseña es obligatoria al crear.";
     } else if (usuario.contrasenia.trim() && !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(usuario.contrasenia)) {
-      newErrors.contrasenia = "Mínimo 8 caracteres, 1 mayúscula, 1 minúscula, 1 número y 1 especial.";
+      newErrors.contrasenia = "Mínimo 8 caracteres, 1 mayúscula, 1 número y 1 caracter especial como $,@,#,% ejemplo de Contraseña : Auditor1$.";
     }
 
     const phoneRegex = /^\d{10}$/;
@@ -92,6 +92,10 @@ const UsuarioForm: React.FC<UsuarioFormModalProps> = ({ idUsuario, show, handleC
     if (!usuario.idRol) newErrors.idRol = "El rol es obligatorio.";
     if (!usuario.idEmpresa) newErrors.idEmpresa = "La empresa es obligatoria.";
 
+    if (fotoPerfilFile && fotoPerfilFile.size > 2 * 1024 * 1024) {
+      newErrors.fotoPerfil = "La imagen no debe exceder los 2MB.";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -100,28 +104,11 @@ const UsuarioForm: React.FC<UsuarioFormModalProps> = ({ idUsuario, show, handleC
     e.preventDefault();
     if (!validateForm()) return;
 
-    const formData = new FormData();
-    Object.keys(usuario).forEach((key) => {
-      const value = usuario[key as keyof Usuario];
-      if (key === "contrasenia" && (!value || (idUsuario && value === ""))) {
-      } else {
-        formData.append(key, value as string);
-      }
-    });
-
-    if (fotoPerfilFile) {
-      formData.append("fotoPerfil", fotoPerfilFile);
-    }
-
-    console.log("Datos enviados:", Object.fromEntries(formData));
-
     try {
       if (idUsuario) {
         await updateUsuario(idUsuario, usuario, fotoPerfilFile);
-        console.log("Usuario actualizado exitosamente:", usuario);
       } else {
         await createUsuario(usuario, fotoPerfilFile);
-        console.log("Usuario creado exitosamente:", usuario);
       }
       onUsuarioSaved();
       handleClose();
@@ -139,13 +126,17 @@ const UsuarioForm: React.FC<UsuarioFormModalProps> = ({ idUsuario, show, handleC
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      if (file.size > 2 * 1024 * 1024) {
+        setErrors((prev) => ({ ...prev, fotoPerfil: "La imagen no debe exceder los 2MB." }));
+        return;
+      }
       setFotoPerfilFile(file);
       const reader = new FileReader();
       reader.onload = () => {
         setUsuario({ ...usuario, fotoPerfil: reader.result as string });
       };
       reader.readAsDataURL(file);
-      console.log("Archivo seleccionado:", file.name);
+      setErrors((prev) => ({ ...prev, fotoPerfil: "" }));
     }
   };
 
@@ -187,9 +178,11 @@ const UsuarioForm: React.FC<UsuarioFormModalProps> = ({ idUsuario, show, handleC
                 )}
                 <Form.Control
                   type="file"
+                  accept="image/*"
                   className="form-control rounded-2"
                   onChange={handleFileChange}
                 />
+                {errors.fotoPerfil && <div className="text-danger mt-1">{errors.fotoPerfil}</div>}
               </div>
             </Col>
             <Col md={6}>
@@ -263,7 +256,10 @@ const UsuarioForm: React.FC<UsuarioFormModalProps> = ({ idUsuario, show, handleC
                     </Button>
                   )}
                 </div>
-                {errors.contrasenia && <div className="invalid-feedback">{errors.contrasenia}</div>}
+                {/* Mostrar el mensaje de error fuera del input-group */}
+                {errors.contrasenia && (
+                  <div className="text-danger mt-1">{errors.contrasenia}</div>
+                )}
               </Form.Group>
             </Col>
             <Col md={6}>

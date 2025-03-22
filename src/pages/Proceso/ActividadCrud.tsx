@@ -159,8 +159,8 @@ const ActividadCRUD: React.FC = () => {
         <div className="modal fade show d-block" tabIndex={-1} style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Agregar Nueva Actividad</h5>
+              <div className="modal-header" style={{backgroundColor:'#800020',color : '#fff'}}>
+                <h5 className="modal-title" >Agregar Nueva Actividad</h5>
                 <button type="button" className="btn-close" onClick={() => setShowCreateModal(false)}></button>
               </div>
               <div className="modal-body">
@@ -207,7 +207,7 @@ const ActividadCRUD: React.FC = () => {
                 <button type="button" className="btn btn-secondary" onClick={() => setShowCreateModal(false)}>
                   Cancelar
                 </button>
-                <button type="button" className="btn btn-primary" onClick={handleCreate}>
+                <button type="button" className="btn" style={{backgroundColor:'#800020',color : '#fff'}} onClick={handleCreate}>
                   Guardar
                 </button>
               </div>

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Button, Form, Modal, Card } from "react-bootstrap";
 import Table from 'react-bootstrap/Table';
-import { getPlanesAuditoria, deletePlanAuditoria, getAuditorias, getActividades, getProcesos, getUsuario } from "../../services/PlanAuditoriaService";
+import { getPlanesAuditoria, deletePlanAuditoria,  getActividades, getProcesos, getUsuario } from "../../services/PlanAuditoriaService";
 import { PlanAuditoria } from "../../services/PlanAuditoriaService";
 import PlanAuditoriaForm from "./PlanAuditoriaForm";
 import "../../styles/cards.css";
@@ -10,6 +10,7 @@ import Swal from 'sweetalert2';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import "../PlanAuditoria/planAud.css";
 import HallazgoForm from "../Hallazgos/HallazgosForm";
+import { getAllAuditorias } from "../../services/AuditoriaService";
 
 const PlanAuditoriaList: React.FC = () => {
   const [planAuditorias, setPlanAuditoria] = useState<PlanAuditoria[]>([]);
@@ -96,7 +97,7 @@ const PlanAuditoriaList: React.FC = () => {
 
   const fetchAuditorias = async () => {
     try {
-      const data = await getAuditorias();
+      const data = await getAllAuditorias();
       setAuditoria(data);
     } catch (error) {
       console.error("Error al obtener las auditorías:", error);

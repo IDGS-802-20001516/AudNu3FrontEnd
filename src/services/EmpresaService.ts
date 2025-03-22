@@ -1,70 +1,157 @@
 import { ENDPOINTS } from '../config/endpoints';
+import Swal from 'sweetalert2';
 
 export interface Empresa {
   id_Empresas: number;
   nombreEmpresa: string;
   imagenBase64?: string;
+  estado?: boolean; // Agregado para eliminación lógica
 }
 
 export const getEmpresas = async (): Promise<Empresa[]> => {
-  const response = await fetch(ENDPOINTS.EMPRESAS);
-  if (!response.ok) {
-    throw new Error('Error al obtener las empresas');
+  try {
+    const response = await fetch(ENDPOINTS.EMPRESAS, {
+      headers: {
+        "Authorization": `Bearer ${localStorage.getItem("token")}`, // Agregado para consistencia
+      },
+    });
+    if (!response.ok) {
+      throw new Error('Error al obtener las empresas');
+    }
+    return response.json(); // Solo devolverá empresas con estado = true
+  } catch (error) {
+    Swal.fire('Error', (error as Error).message, 'error');
+    throw error;
   }
-  return response.json();
 };
 
-export const getEmpresaById = async (id: number): Promise<Empresa> => {
-  const response = await fetch(`${ENDPOINTS.EMPRESAS}/${id}`);
-  if (!response.ok) {
-    throw new Error('Error al obtener la empresa');
+export const getEmpresasAll = async (): Promise<Empresa[]> => {
+  try {
+    const response = await fetch(ENDPOINTS.EMPRESASALL, {
+      headers: {
+        "Authorization": `Bearer ${localStorage.getItem("token")}`, // Agregado para consistencia
+      },
+    });
+    if (!response.ok) {
+      throw new Error('Error al obtener las empresas');
+    }
+    return response.json(); // Solo devolverá empresas con estado = true
+  } catch (error) {
+    Swal.fire('Error', (error as Error).message, 'error');
+    throw error;
   }
-  return response.json();
+};  
+
+export const getEmpresaById = async (id: number): Promise<Empresa> => {
+  try {
+    const response = await fetch(`${ENDPOINTS.EMPRESAS}/${id}`, {
+      headers: {
+        "Authorization": `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+    if (!response.ok) {
+      throw new Error('Error al obtener la empresa');
+    }
+    return response.json(); // Solo devolverá empresas con estado = true
+  } catch (error) {
+    Swal.fire('Error', (error as Error).message, 'error');
+    throw error;
+  }
 };
 
 export const createEmpresa = async (empresa: Omit<Empresa, 'id_Empresas'>): Promise<Empresa> => {
-  const formData = new FormData();
-  formData.append("nombreEmpresa", empresa.nombreEmpresa);
-  if (empresa.imagenBase64) {
-    formData.append("imagenBase64", empresa.imagenBase64);
+  try {
+    const formData = new FormData();
+    formData.append("nombreEmpresa", empresa.nombreEmpresa);
+    if (empresa.imagenBase64) {
+      formData.append("imagenBase64", empresa.imagenBase64);
+    }
+    // No necesitamos enviar estado, el backend lo establece como true
+
+    const response = await fetch(ENDPOINTS.EMPRESAS, {
+      method: 'POST',
+      headers: {
+        "Authorization": `Bearer ${localStorage.getItem("token")}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorResponse = await response.json();
+      throw new Error(errorResponse.message || 'Error al crear la empresa');
+    }
+
+    const createdEmpresa = await response.json();
+    Swal.fire('Éxito', 'Empresa creada correctamente', 'success');
+    return createdEmpresa;
+  } catch (error) {
+    Swal.fire('Error', (error as Error).message, 'error');
+    throw error;
   }
-
-  const response = await fetch(ENDPOINTS.EMPRESAS, {
-    method: 'POST',
-    body: formData,
-  });
-
-  if (!response.ok) {
-    throw new Error('Error al crear la empresa');
-  }
-
-  return response.json();
 };
 
 export const updateEmpresa = async (id: number, empresa: Empresa): Promise<void> => {
-  const formData = new FormData();
-  formData.append("id_Empresas", empresa.id_Empresas.toString());
-  formData.append("nombreEmpresa", empresa.nombreEmpresa);
-  if (empresa.imagenBase64) {
-    formData.append("imagenBase64", empresa.imagenBase64); // Enviar solo si hay una imagen
-  }
+  try {
+    const formData = new FormData();
+    formData.append("id_Empresas", empresa.id_Empresas.toString());
+    formData.append("nombreEmpresa", empresa.nombreEmpresa);
+    if (empresa.imagenBase64) {
+      formData.append("imagenBase64", empresa.imagenBase64);
+    }
+    // No modificamos estado aquí, se mantiene como true
 
-  const response = await fetch(`${ENDPOINTS.EMPRESAS}/${id}`, {
-    method: 'PUT',
-    body: formData,
-  });
+    const response = await fetch(`${ENDPOINTS.EMPRESAS}/${id}`, {
+      method: 'PUT',
+      headers: {
+        "Authorization": `Bearer ${localStorage.getItem("token")}`,
+      },
+      body: formData,
+    });
 
-  if (!response.ok) {
-    throw new Error(`Error al actualizar la empresa: ${response.status} ${response.statusText}`);
+    if (!response.ok) {
+      const errorResponse = await response.json();
+      throw new Error(errorResponse.message || `Error al actualizar la empresa: ${response.status} ${response.statusText}`);
+    }
+
+    Swal.fire('Éxito', 'Empresa actualizada correctamente', 'success');
+  } catch (error) {
+    Swal.fire('Error', (error as Error).message, 'error');
+    throw error;
   }
-  // No intentamos parsear la respuesta como JSON porque el servidor devuelve 204 No Content
 };
 
 export const deleteEmpresa = async (id: number): Promise<void> => {
-  const response = await fetch(`${ENDPOINTS.EMPRESAS}/${id}`, {
-    method: 'DELETE',
-  });
-  if (!response.ok) {
-    throw new Error('Error al eliminar la empresa');
+  try {
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: "La empresa será desactivada y no estará disponible.",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, desactivar empresa',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (!result.isConfirmed) {
+      throw new Error('Acción cancelada');
+    }
+
+    const response = await fetch(`${ENDPOINTS.EMPRESAS}/${id}`, {
+      method: 'DELETE',
+      headers: {
+        "Authorization": `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorResponse = await response.json();
+      throw new Error(errorResponse.message || 'Error al desactivar la empresa');
+    }
+
+    Swal.fire('Éxito', 'Empresa desactivada correctamente', 'success');
+  } catch (error) {
+    Swal.fire('Error', (error as Error).message, 'error');
+    throw error;
   }
 };

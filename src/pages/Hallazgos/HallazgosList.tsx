@@ -3,7 +3,7 @@ import { getHallazgos, deleteHallazgo, VistaHallazgo, getAuditorias } from "../.
 import HallazgoForm from "./HallazgosForm";
 import { useNavigate } from "react-router-dom";
 import "./HallazgosList.css";
-import { getEmpresas, Empresa } from "../../services/EmpresaService";
+import {  Empresa, getEmpresasAll } from "../../services/EmpresaService";
 import { FaEdit, FaTrash, FaEye } from "react-icons/fa";
 
 // Componente para mostrar el texto completo en un modal
@@ -221,7 +221,7 @@ const HallazgoList: React.FC = () => {
 
   const fetchEmpresas = async () => {
     try {
-      const data = await getEmpresas();
+      const data = await getEmpresasAll();
       setEmpresas(data);
     } catch (error) {
       console.error("Error al obtener las empresas:", error);

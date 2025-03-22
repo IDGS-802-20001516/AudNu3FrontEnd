@@ -20,6 +20,14 @@ export const getAuditorias = async (): Promise<Auditoria[]> => {
   return response.json();
 };
 
+export const getAllAuditorias = async (): Promise<Auditoria[]> => {
+  const response = await fetch(ENDPOINTS.AUDITORIASALL);
+  if (!response.ok) {
+    throw new Error('Error al obtener las auditorías');
+  }
+  return response.json();
+};
+
 export const getAuditoriaById = async (id: number): Promise<Auditoria> => {
   const response = await fetch(`${ENDPOINTS.AUDITORIAS}/${id}`);
   if (!response.ok) {

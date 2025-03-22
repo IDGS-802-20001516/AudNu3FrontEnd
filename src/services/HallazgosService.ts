@@ -116,7 +116,7 @@ export const getUsuario = async ()=> {
 
 export const getAuditorias = async ()=> {
   try{
-    const response = await fetch(ENDPOINTS.AUDITORIAS);
+    const response = await fetch(ENDPOINTS.AUDITORIASALL);
     return await response.json();
   } catch (error){
     console.error("Error al obtener los auditorias", error);

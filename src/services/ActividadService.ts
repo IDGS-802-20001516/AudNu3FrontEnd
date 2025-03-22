@@ -2,102 +2,99 @@ import { ENDPOINTS } from "../config/endpoints";
 import Swal from 'sweetalert2';
 
 export interface Actividad {
-    idActividad?: number;
-    nombreActividad: string;
-    idProceso: number;
-    criterio: string;
-  }
+  idActividad?: number;
+  nombreActividad: string;
+  idProceso: number;
+  criterio: string;
+}
 
+// Función para obtener los headers comunes
+const getHeaders = () => ({
+  "Content-Type": "application/json",
+  Authorization: `Bearer ${localStorage.getItem("token")}`,
+});
 
+// Función para manejar errores y mostrar alertas
+const handleError = (error: unknown, message: string) => {
+  console.error(message, error);
+  Swal.fire('Error', message, 'error');
+  throw error;
+};
 
+// Función para mostrar alertas de éxito
+const showSuccessAlert = (message: string) => {
+  Swal.fire('Éxito', message, 'success');
+};
 
+// Obtener todas las actividades
 export const getActividades = async (): Promise<Actividad[]> => {
   try {
     const response = await fetch(ENDPOINTS.ACTIVIDAD, {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
+      headers: getHeaders(),
     });
-    if (!response.ok) throw new Error("Error al obtener actividades");
+    if (!response.ok) throw new Error(`Error ${response.status}: ${response.statusText}`);
     return await response.json();
   } catch (error) {
-    console.error("Error en getActividades:", error);
-    throw error;
+    return handleError(error, "Error al obtener actividades");
   }
 };
 
+// Obtener una actividad por ID
 export const getActividadById = async (id: number): Promise<Actividad> => {
   try {
     const response = await fetch(`${ENDPOINTS.ACTIVIDAD}/${id}`, {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
+      headers: getHeaders(),
     });
-    if (!response.ok) throw new Error("Error al obtener la actividad");
+    if (!response.ok) throw new Error(`Error ${response.status}: ${response.statusText}`);
     return await response.json();
   } catch (error) {
-    console.error("Error en getActividadById:", error);
-    throw error;
+    return handleError(error, "Error al obtener la actividad");
   }
 };
 
+// Crear una nueva actividad
 export const createActividad = async (actividad: Actividad): Promise<Actividad> => {
   try {
     const response = await fetch(ENDPOINTS.ACTIVIDAD, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
+      headers: getHeaders(),
       body: JSON.stringify(actividad),
     });
-    console.log(actividad)
-    if (!response.ok) throw new Error("Error al crear la actividad");
-    Swal.fire('Éxito', 'Actividad creada correctamente', 'success');
+    if (!response.ok) throw new Error(`Error ${response.status}: ${response.statusText}`);
+    showSuccessAlert('Actividad creada correctamente');
     return await response.json();
   } catch (error) {
-    console.error("Error en createActividad:", error);
-    Swal.fire('Error', 'Error al crear la actividad', 'error');
-    throw error;
+    return handleError(error, "Error al crear la actividad");
   }
 };
 
+// Actualizar una actividad existente
 export const updateActividad = async (id: number, actividad: Actividad): Promise<void> => {
   try {
     const response = await fetch(`${ENDPOINTS.ACTIVIDAD}/${id}`, {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
+      headers: getHeaders(),
       body: JSON.stringify(actividad),
     });
-    if (!response.ok) throw new Error("Error al actualizar la actividad");
-    Swal.fire('Éxito', 'Actividad actualizada correctamente', 'success');
+    if (!response.ok) throw new Error(`Error ${response.status}: ${response.statusText}`);
+    showSuccessAlert('Actividad actualizada correctamente');
   } catch (error) {
-    console.error("Error en updateActividad:", error);
-    Swal.fire('Error', 'Error al actualizar la actividad', 'error');
-    throw error;
+    handleError(error, "Error al actualizar la actividad");
   }
 };
 
+// Eliminar una actividad
 export const deleteActividad = async (id: number): Promise<void> => {
   try {
     const response = await fetch(`${ENDPOINTS.ACTIVIDAD}/${id}`, {
       method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
+      headers: getHeaders(),
     });
-    if (!response.ok) throw new Error("Error al eliminar la actividad");
-    Swal.fire('Éxito', 'Actividad eliminada correctamente', 'success');
+    if (!response.ok) throw new Error(`Error ${response.status}: ${response.statusText}`);
+    showSuccessAlert('Actividad eliminada correctamente');
   } catch (error) {
-    console.error("Error en deleteActividad:", error);
-    Swal.fire('Error', 'Error al eliminar la actividad', 'error');
-    throw error;
+    handleError(error, "Error al eliminar la actividad");
   }
 };

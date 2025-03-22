@@ -36,7 +36,7 @@ const fetchData = async <T>(url: string, options?: RequestInit): Promise<T> => {
 
 export const getActividades = async () => {
   try {
-    const response = await fetch(ENDPOINTS.ACTIVIDAD);
+    const response = await fetch(ENDPOINTS.ACTIVIDADALL);
     return await response.json();
   } catch (error) {
     console.error("Error al obtener las actividades:", error);
@@ -46,7 +46,7 @@ export const getActividades = async () => {
 
 export const getUsuario = async () => {
   try {
-    const response = await fetch(ENDPOINTS.USUARIOS);
+    const response = await fetch(ENDPOINTS.USUARIOSALL);
     return await response.json();
   } catch (error) {
     console.error("Error al obtener las actividades:", error);
@@ -67,7 +67,7 @@ export const getCriterios = async () => {
 
 export const getProcesos = async () => {
   try {
-    const response = await fetch(ENDPOINTS.PROCESOS);
+    const response = await fetch(ENDPOINTS.PROCESOSALL);
     return await response.json();
   } catch (error) {
     console.error("Error al obtener los procesos:", error);
