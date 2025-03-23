@@ -87,7 +87,6 @@ const ProcesoCRUD: React.FC = () => {
           <table className="table table-striped table-hover">
             <thead>
               <tr>
-                <th>ID</th>
                 <th>Nombre del Proceso</th>
                 <th>Acciones</th>
               </tr>
@@ -95,7 +94,7 @@ const ProcesoCRUD: React.FC = () => {
             <tbody>
               {procesos.map((proceso) => (
                 <tr key={proceso.idProceso}>
-                  <td>{proceso.idProceso}</td>
+                  {/**<td>{proceso.idProceso}</td> */}
                   <td>{proceso.nombreProceso}</td>
                   <td>
                     <button

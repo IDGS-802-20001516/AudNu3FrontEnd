@@ -115,7 +115,6 @@ const ActividadCRUD: React.FC = () => {
             <table className="table table-striped table-hover">
               <thead>
                 <tr>
-                  <th>ID</th>
                   <th>Nombre de la Actividad</th>
                   <th>Criterio</th>
                   <th>Proceso</th>
@@ -125,7 +124,7 @@ const ActividadCRUD: React.FC = () => {
               <tbody>
                 {actividades.map((actividad) => (
                   <tr key={actividad.idActividad} className="actividad-row">
-                    <td data-label="ID">{actividad.idActividad}</td>
+                    {/*<td data-label="ID">{actividad.idActividad}</td> */}
                     <td data-label="Nombre de la Actividad">{actividad.nombreActividad}</td>
                     <td data-label="Criterio">{actividad.criterio}</td>
                     <td data-label="Proceso">{procesos.find((p) => p.idProceso === actividad.idProceso)?.nombreProceso || "Sin Proceso"}</td>

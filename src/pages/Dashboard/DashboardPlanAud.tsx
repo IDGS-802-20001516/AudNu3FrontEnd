@@ -1,8 +1,9 @@
-import React, { useEffect, useState, useMemo } from "react";
-import { getPlanesAuditoria, getProcesos, getAuditorias } from "../../services/PlanAuditoriaService";
+import React, { useEffect, useState, useMemo, Suspense } from "react";
+import { getPlanesAuditoria, getAuditorias } from "../../services/PlanAuditoriaService";
+import { getProcesos } from "../../services/ProcesoService";
 import { PlanAuditoria } from "../../services/PlanAuditoriaService";
 import { Auditoria } from "../../services/AuditoriaService";
-import { Bar, Chart } from "react-chartjs-2";
+import { Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -12,12 +13,14 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
-import { MatrixController, MatrixElement } from "chartjs-chart-matrix"; // Para el mapa de calor
-import ChartDataLabels from "chartjs-plugin-datalabels"; // Plugin para etiquetas de datos
+import ChartDataLabels from "chartjs-plugin-datalabels";
 import "../../styles/cards.css";
 import { useNavigate } from "react-router-dom";
 
-// Registrar componentes de Chart.js, el plugin de etiquetas y los componentes del mapa de calor
+// Importar Plotly de manera dinámica para evitar problemas de tipado con JSX
+const Plotly = React.lazy(() => import("react-plotly.js") as Promise<{ default: React.ComponentType<any> }>);
+
+// Registrar componentes de Chart.js y el plugin de etiquetas
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -25,9 +28,7 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  ChartDataLabels,
-  MatrixController,
-  MatrixElement
+  ChartDataLabels
 );
 
 const PlanAuditoriaDashboard: React.FC = () => {
@@ -62,7 +63,7 @@ const PlanAuditoriaDashboard: React.FC = () => {
     try {
       const data = await getProcesos();
       console.log("Datos de procesos:", data);
-      setProcesos(data);
+      setProcesos(data.filter((proceso) => proceso.idProceso !== undefined) as { idProceso: number; nombreProceso: string }[]);
     } catch (error) {
       console.error("Error al obtener los procesos:", error);
     }
@@ -144,7 +145,7 @@ const PlanAuditoriaDashboard: React.FC = () => {
     };
   }, [semaforosPorProceso]);
 
-  // Calcular puntajes de riesgo (probabilidad e impacto) para el mapa de calor
+  // Calcular puntajes de riesgo (probabilidad e impacto) para el treemap
   const riskScoresPorProceso = useMemo(() => {
     const procesoMap = new Map<string, { probability: number; impact: number; count: number; nombreProceso: string }>();
 
@@ -199,62 +200,82 @@ const PlanAuditoriaDashboard: React.FC = () => {
     }));
   }, [planesFiltrados, procesos]);
 
-  // Datos para el mapa de calor
-  const heatmapData = useMemo(() => {
-    // Crear una matriz para agrupar procesos por celda
-    const matrix = Array(5)
-      .fill(0)
-      .map(() => Array(5).fill({ counts: [], nombres: [] }));
+  // Datos para el treemap con Plotly.js (usamos any para evitar errores de tipado)
+  const treemapData: any = useMemo(() => {
+    const labels = riskScoresPorProceso.map((proc) => `${proc.nombreProceso}<br>Riesgo: ${((proc.probability + proc.impact) / 2).toFixed(1)}`);
+    const parents = riskScoresPorProceso.map(() => ""); // Sin padres, todos los procesos son de nivel superior
+    const values = riskScoresPorProceso.map((proc) => proc.count); // Tamaño basado en el número de planes
+    const riskLevels = riskScoresPorProceso.map((proc) => (proc.probability + proc.impact) / 2); // Nivel de riesgo (promedio de probabilidad e impacto)
 
-    // Agrupar procesos por celda basada en probabilidad e impacto
-    riskScoresPorProceso.forEach((proc) => {
-      const x = proc.impact - 1; // Índice 0-4
-      const y = proc.probability - 1; // Índice 0-4
-      if (x >= 0 && x < 5 && y >= 0 && y < 5) {
-        matrix[y][x].counts.push(proc.count); // Almacenar el conteo individual
-        matrix[y][x].nombres.push(proc.nombreProceso); // Almacenar los nombres
-      }
-    });
+    // Normalizar el nivel de riesgo entre 0 y 1 (rango de 1 a 5)
+    const normalizedRiskLevels = riskLevels.map((risk) => (risk - 1) / 4);
 
-    // Preparar datos para el mapa de calor
-    const data = [];
-    for (let y = 0; y < 5; y++) {
-      for (let x = 0; x < 5; x++) {
-        data.push({
-          x: x + 1, // Convertir a 1-5
-          y: 5 - y, // Invertir para que "Constante" esté arriba
-          v: matrix[y][x].counts.length > 0 ? 1 : 0, // Usar 1 si hay datos, 0 si no
-          counts: matrix[y][x].counts, // Array de conteos
-          nombres: matrix[y][x].nombres, // Array de nombres
-        });
-      }
-    }
+    // Escala de colores continua (verde claro -> amarillo -> rojo intenso)
+    const colorscale = [
+      [0, "rgba(144, 238, 144, 0.8)"], // Verde claro para riesgo 1
+      [0.5, "rgba(255, 255, 102, 0.8)"], // Amarillo para riesgo 3
+      [1, "rgba(255, 69, 0, 0.8)"], // Rojo intenso para riesgo 5
+    ];
 
-    return {
-      datasets: [
-        {
-          label: "Riesgo por Proceso",
-          data: data,
-          backgroundColor: (ctx: any) => {
-            const value = ctx.dataset.data[ctx.dataIndex];
-            const prob = value.y;
-            const imp = value.x;
-
-            if (prob === 1) return imp <= 2 ? "#28a745" : "#ffc107";
-            if (prob === 2) return imp <= 2 ? "#28a745" : imp <= 3 ? "#ffc107" : "#dc3545";
-            if (prob === 3) return imp <= 2 ? "#28a745" : imp <= 3 ? "#ffc107" : "#dc3545";
-            if (prob === 4) return imp <= 2 ? "#ffc107" : "#dc3545";
-            if (prob === 5) return imp <= 3 ? "#ffc107" : "#dc3545";
-            return "#28a745";
+    return [
+      {
+        type: "treemap",
+        labels,
+        parents,
+        values,
+        marker: {
+          colors: normalizedRiskLevels,
+          colorscale,
+          showscale: true, // Mostrar barra de color
+          colorbar: {
+            title: "Nivel de Riesgo",
+            titleside: "right",
+            tickvals: [0, 0.5, 1],
+            ticktext: ["1 (Bajo)", "3 (Moderado)", "5 (Alto)"],
           },
-          borderColor: "#333",
-          borderWidth: 1,
-          width: ({ chart }: any) => (chart.chartArea?.width || 0) / 5 - 1,
-          height: ({ chart }: any) => (chart.chartArea?.height || 0) / 5 - 1,
+          line: {
+            color: "rgba(0,0,0,0)", // Color transparente para eliminar el contorno
+            width: 0, // Grosor 0 para eliminar el contorno
+          },
         },
-      ],
-    };
+        textinfo: "label", // Mostrar el nombre del proceso y el nivel de riesgo
+        textfont: {
+          size: 14,
+          color: "#fff",
+          family: "Roboto",
+        },
+        hoverinfo: "text",
+        hovertext: riskScoresPorProceso.map(
+          (proc) =>
+            `Proceso: ${proc.nombreProceso}<br>Impacto: ${["Insignificante", "Menor", "Crítico", "Mayor", "Catastrófico"][proc.impact - 1]}<br>Probabilidad: ${["Improbable", "Posible", "Ocasional", "Moderado", "Constante"][proc.probability - 1]}<br>Nivel de Riesgo: ${((proc.probability + proc.impact) / 2).toFixed(1)}<br>Total Actividades: ${proc.count}`
+        ),
+      },
+    ];
   }, [riskScoresPorProceso]);
+
+  // Layout para el treemap (usamos any para evitar errores de tipado)
+  const treemapLayout: any = useMemo(() => ({
+    title: {
+      text: "Análisis de Riesgo por Proceso (Treemap)",
+      font: {
+        size: 20,
+        family: "Roboto",
+        color: "#333",
+        weight: 700, // Cambiar "bold" a 700 para evitar error de tipado
+      },
+      x: 0.5,
+      xanchor: "center",
+    },
+    margin: { t: 100, b: 50, l: 50, r: 100 }, // Espacio adicional a la derecha para la barra de color
+    height: 600,
+    width: 900,
+    paper_bgcolor: "rgba(0,0,0,0)",
+    plot_bgcolor: "rgba(0,0,0,0)",
+    font: {
+      family: "Roboto",
+      color: "#555",
+    },
+  }), []);
 
   // Análisis combinado para ambas gráficas
   const generarAnalisis = () => {
@@ -272,13 +293,13 @@ const PlanAuditoriaDashboard: React.FC = () => {
       .map((p) => p.nombreProceso);
 
     const highRiskProcesses = riskScoresPorProceso
-      .filter((p) => p.probability >= 4 && p.impact >= 4)
+      .filter((p) => (p.probability + p.impact) / 2 >= 4)
       .map((p) => p.nombreProceso);
     const moderateRiskProcesses = riskScoresPorProceso
-      .filter((p) => (p.probability === 3 && p.impact >= 3) || (p.probability >= 4 && p.impact <= 3))
+      .filter((p) => (p.probability + p.impact) / 2 >= 3 && (p.probability + p.impact) / 2 < 4)
       .map((p) => p.nombreProceso);
     const lowRiskProcesses = riskScoresPorProceso
-      .filter((p) => p.probability <= 2 && p.impact <= 2)
+      .filter((p) => (p.probability + p.impact) / 2 < 3)
       .map((p) => p.nombreProceso);
 
     let analisis = `**Análisis Ejecutivo - ${new Date().toLocaleDateString()}**\n\n`;
@@ -303,27 +324,28 @@ const PlanAuditoriaDashboard: React.FC = () => {
       analisis += `- No se identificaron procesos con buen desempeño (sin OM ni C predominantes).\n`;
     }
 
-    analisis += `\n### Matriz de Riesgo (Mapa de Calor)\n`;
+    analisis += `\n### Análisis de Riesgo por Proceso (Treemap)\n`;
     analisis += `- Total de procesos analizados: ${riskScoresPorProceso.length}.\n`;
+    analisis += `- Nota: El tamaño de cada rectángulo representa el número de planes. La intensidad del color indica el nivel de riesgo (verde claro = bajo, amarillo = moderado, rojo intenso = alto). El nivel de riesgo se muestra en cada rectángulo. Pase el cursor sobre los rectángulos para ver más detalles.\n`;
     if (highRiskProcesses.length > 0) {
-      analisis += `- **Riesgo Alto (Probabilidad e Impacto ≥ 4):** ${highRiskProcesses.join(", ")}. Se requiere acción inmediata para mitigar riesgos.\n`;
+      analisis += `- **Riesgo Alto (Nivel de Riesgo ≥ 4):** ${highRiskProcesses.join(", ")}. Se requiere acción inmediata para mitigar riesgos.\n`;
     } else {
       analisis += `- No se identificaron procesos de riesgo alto.\n`;
     }
     if (moderateRiskProcesses.length > 0) {
-      analisis += `- **Riesgo Moderado (Probabilidad o Impacto ≥ 3):** ${moderateRiskProcesses.join(", ")}. Se recomienda monitoreo y planes de acción preventivos.\n`;
+      analisis += `- **Riesgo Moderado (Nivel de Riesgo entre 3 y 4):** ${moderateRiskProcesses.join(", ")}. Se recomienda monitoreo y planes de acción preventivos.\n`;
     } else {
       analisis += `- No se identificaron procesos de riesgo moderado.\n`;
     }
     if (lowRiskProcesses.length > 0) {
-      analisis += `- **Riesgo Bajo (Probabilidad e Impacto ≤ 2):** ${lowRiskProcesses.join(", ")}. Estos procesos están bajo control.\n`;
+      analisis += `- **Riesgo Bajo (Nivel de Riesgo < 3):** ${lowRiskProcesses.join(", ")}. Estos procesos están bajo control.\n`;
     } else {
       analisis += `- No se identificaron procesos de riesgo bajo.\n`;
     }
 
     analisis += `\n### Recomendaciones Generales\n`;
     analisis += `- Enfocarse en reducir la proporción de NCA y NCM mediante revisiones detalladas y planes de acción específicos.\n`;
-    analisis += `- Priorizar los procesos de riesgo alto y moderado identificados en el mapa de calor para auditorías más frecuentes y establecer controles más estrictos.\n`;
+    analisis += `- Priorizar los procesos de riesgo alto y moderado identificados en el treemap para auditorías más frecuentes y establecer controles más estrictos.\n`;
     return analisis;
   };
 
@@ -362,7 +384,7 @@ const PlanAuditoriaDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Gráfico de Barras (Original) */}
+      {/* Gráfico de Barras (Original con Chart.js) */}
       <div className="row mb-4">
         <div className="col-12">
           <div className="card shadow-sm border-0" style={{ background: "#f8f9fa" }}>
@@ -406,84 +428,24 @@ const PlanAuditoriaDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Mapa de Calor (Heatmap) */}
+      {/* Gráfico Treemap con Plotly.js */}
       <div className="row mb-4">
         <div className="col-12">
           <div className="card shadow-sm border-0" style={{ background: "#f8f9fa" }}>
             <div className="card-header" style={{ backgroundColor: "#800020", color: "white" }}>
-              <h5 className="card-title mb-0 fw-bold">Matriz de Riesgo por Proceso</h5>
+              <h5 className="card-title mb-0 fw-bold">Análisis de Riesgo por Proceso</h5>
             </div>
             <div className="card-body">
-              <Chart
-                type="matrix"
-                data={heatmapData}
-                options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                      callbacks: {
-                        label: (context: any) => {
-                          const data = context.dataset.data[context.dataIndex];
-                            return `${data.nombres.join(", ")}:\nProbabilidad=${data.y},\nImpacto=${data.x},\nConteos=${data.counts.join(", ")}`;
-                          },
-                          },
-                        },
-                        title: {
-                          display: true,
-                          text: "Matriz de Riesgo (Probabilidad vs Impacto)",
-                          font: { size: 18, weight: "bold" },
-                          color: "#333",
-                        },
-                        datalabels: {
-                          color: "#ffffff",
-                          anchor: "center",
-                          align: "center",
-                          font: {
-                          weight: "bold",
-                          size: 10, // Reducir tamaño para que quepan múltiples líneas
-                          lineHeight: 1.2, // Espaciado entre líneas
-                          },
-                          formatter: (value: any) => {
-                        if (value.counts.length > 0) {
-                          // Filtrar solo los conteos mayores a 0 y unirlos con saltos de línea
-                          const nonZeroCounts = value.counts.filter((count: number) => count > 0);
-                          return nonZeroCounts.length > 0 ? nonZeroCounts.join("\n") : "";
-                        }
-                        return "";
-                      },
-                    },
-                  },
-                  scales: {
-                    x: {
-                      title: { display: true, text: "Impacto", font: { size: 14 } },
-                      ticks: {
-                        stepSize: 1,
-                        callback: (value: any) => {
-                          const labels = ["Insignificante", "Menor", "Crítica", "Mayor", "Catastrófico"];
-                          return labels[value - 1] || value;
-                        },
-                      },
-                      min: 1,
-                      max: 5,
-                    },
-                    y: {
-                      title: { display: true, text: "Probabilidad", font: { size: 14 } },
-                      ticks: {
-                        stepSize: 1,
-                        callback: (value: any) => {
-                          const labels = ["Improbable", "Posible", "Ocasional", "Moderado", "Constante"];
-                          return labels[value - 1] || value;
-                        },
-                      },
-                      min: 1,
-                      max: 5,
-                    },
-                  },
-                }}
-                height={400}
-              />
+              <div style={{ display: "flex", justifyContent: "center" }}>
+                <Suspense fallback={<div>Cargando gráfico...</div>}>
+                  <Plotly
+                    data={treemapData}
+                    layout={treemapLayout}
+                    style={{ width: "100%", maxWidth: "900px", height: "600px" }}
+                    config={{ responsive: true }}
+                  />
+                </Suspense>
+              </div>
             </div>
           </div>
         </div>

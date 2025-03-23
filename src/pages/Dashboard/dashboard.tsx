@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { Pie, Bar } from "react-chartjs-2";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement } from "chart.js";
-import { getPlanesAuditoria, getUsuario, getProcesos } from "../../services/PlanAuditoriaService";
+import { getPlanesAuditoria,  getProcesos } from "../../services/PlanAuditoriaService";
+import { getUsuarios } from "../../services/UsuarioService";
 import { getAuditorias } from "../../services/AuditoriaService";
 import { PlanAuditoria } from "../../services/PlanAuditoriaService";
 import { useNavigate } from 'react-router-dom';
@@ -25,7 +26,7 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([getPlanesAuditoria(), getUsuario(), getAuditorias(), getProcesos()])
+    Promise.all([getPlanesAuditoria(), getUsuarios(), getAuditorias(), getProcesos()])
       .then(([planes, usuarios, auditorias, procesos]) => {
         // Filtrar usuarios con roles 4 y 5
         const usuariosFiltrados = usuarios.filter(

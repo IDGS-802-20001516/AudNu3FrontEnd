@@ -24,6 +24,23 @@ export const getProcesos = async (): Promise<Proceso[]> => {
   }
 };
 
+export const getProcesosAll = async (): Promise<Proceso[]> => {
+  try {
+    const response = await fetch(ENDPOINTS.PROCESOSALL, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+    if (!response.ok) throw new Error("Error al obtener procesos");
+    return await response.json(); // Ya solo recibirá procesos con estado = true gracias al backend
+  } catch (error) {
+    console.error("Error en getProcesos:", error);
+    throw error;
+  }
+};
+
 export const getProcesoById = async (id: number): Promise<Proceso> => {
   try {
     const response = await fetch(`${ENDPOINTS.PROCESOS}/${id}`, {
