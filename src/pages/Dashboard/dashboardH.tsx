@@ -351,62 +351,65 @@ const HallazgoDashboard: React.FC = () => {
               <h5 className="card-title mb-0 fw-bold">Monto de Impacto por Semáforo</h5>
             </div>
             <div className="card-body">
-              <div className="row align-items-center">
+                <div className="row align-items-center">
                 {/* Gráfico de pastel */}
                 <div className="col-md-6">
                   <Pie
-                    data={impactoSemaforoPieData}
-                    options={{
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      plugins: {
-                        legend: {
-                          position: "top",
-                          labels: { font: { size: 14 }, boxWidth: 20 },
-                        },
-                        title: {
-                          display: true,
-                          text: "Distribución del Monto de Impacto",
-                          font: { size: 18, weight: "bold" },
-                          color: "#333",
-                        },
-                        tooltip: {
-                          callbacks: {
-                            label: (tooltipItem) => {
-                              const value = tooltipItem.raw as number;
-                              return `${tooltipItem.label}: $${value.toLocaleString()}`;
-                            },
-                          },
-                        },
+                  data={impactoSemaforoPieData}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                    legend: {
+                      position: "top",
+                      labels: { font: { size: 14 }, boxWidth: 20 },
+                    },
+                    title: {
+                      display: true,
+                      text: "Distribución del Monto de Impacto",
+                      font: { size: 18, weight: "bold" },
+                      color: "#333",
+                    },
+                    tooltip: {
+                      callbacks: {
+                      label: (tooltipItem) => {
+                        const value = tooltipItem.raw as number;
+                        return `${tooltipItem.label}: $${value.toLocaleString()}`;
                       },
-                    }}
-                    height={300} // Reducimos la altura para dejar espacio a la tabla
+                      },
+                    },
+                    datalabels: {
+                      display: false, // Deshabilitar etiquetas de datos
+                    },
+                    },
+                  }}
+                  height={300} // Reducimos la altura para dejar espacio a la tabla
                   />
                 </div>
                 {/* Tabla con los datos */}
                 <div className="col-md-6">
                   <table className="table table-bordered table-sm">
-                    <thead>
-                      <tr style={{ backgroundColor: "#800020", color: "white" }}>
-                        <th>Semáforo</th>
-                        <th>Monto de Impacto</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {Object.entries(impactoPorSemaforo).map(([semaforo, monto]) => (
-                        <tr key={semaforo}>
-                          <td>{semaforo}</td>
-                          <td>${monto.toLocaleString()}</td>
-                        </tr>
-                      ))}
-                      <tr style={{ fontWeight: "bold", backgroundColor: "#e9ecef" }}>
-                        <td>Total</td>
-                        <td>${totalImpacto.toLocaleString()}</td>
-                      </tr>
-                    </tbody>
+                  <thead>
+                    <tr style={{ backgroundColor: "#800020", color: "white" }}>
+                    <th>Semáforo</th>
+                    <th>Monto de Impacto</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.entries(impactoPorSemaforo).map(([semaforo, monto]) => (
+                    <tr key={semaforo}>
+                      <td>{semaforo}</td>
+                      <td>${monto.toLocaleString()}</td>
+                    </tr>
+                    ))}
+                    <tr style={{ fontWeight: "bold", backgroundColor: "#e9ecef" }}>
+                    <td>Total</td>
+                    <td>${totalImpacto.toLocaleString()}</td>
+                    </tr>
+                  </tbody>
                   </table>
                 </div>
-              </div>
+                </div>
             </div>
           </div>
         </div>

@@ -34,7 +34,7 @@ const WelcomePage: React.FC = () => {
             className="d-block w-100 carousel-image"
             src={img3}
             alt="First slide"
-            style={{ maxHeight: "400px",maxWidth: "1200px", objectFit: "cover" }}
+            style={{ maxHeight: "400px", objectFit: "cover" }}
           />
           <Carousel.Caption>
             <h3>Auditoría Interna</h3>

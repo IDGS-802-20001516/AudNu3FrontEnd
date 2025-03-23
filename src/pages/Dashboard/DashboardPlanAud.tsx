@@ -37,6 +37,7 @@ const PlanAuditoriaDashboard: React.FC = () => {
   const [auditorias, setAuditorias] = useState<Auditoria[]>([]);
   const [selectedAuditoriaNombre, setSelectedAuditoriaNombre] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  const [showLabels, setShowLabels] = useState(false); // Estado para controlar la visibilidad de las etiquetas
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -194,25 +195,30 @@ const PlanAuditoriaDashboard: React.FC = () => {
 
     return Array.from(procesoMap.entries()).map(([nombreProceso, data]) => ({
       nombreProceso,
-      probability: data.count > 0 ? Math.round(data.probability / data.count) : 1,
-      impact: data.count > 0 ? Math.round(data.impact / data.count) : 1,
+      probability: data.count > 0 ? Math.round(data.probability / data.count) : 0,
+      impact: data.count > 0 ? Math.round(data.impact / data.count) : 0,
       count: data.count,
     }));
   }, [planesFiltrados, procesos]);
 
   // Datos para el treemap con Plotly.js (usamos any para evitar errores de tipado)
   const treemapData: any = useMemo(() => {
-    const labels = riskScoresPorProceso.map((proc) => `${proc.nombreProceso}<br>Riesgo: ${((proc.probability + proc.impact) / 2).toFixed(1)}`);
+    const labels = riskScoresPorProceso.map((proc) => {
+      const riskLevel = (proc.probability + proc.impact) / 2;
+      return riskLevel === 0
+        ? `${proc.nombreProceso}<br>Sin Riesgo`
+        : `${proc.nombreProceso}<br>Riesgo: ${riskLevel.toFixed(1)}`;
+    });
     const parents = riskScoresPorProceso.map(() => ""); // Sin padres, todos los procesos son de nivel superior
     const values = riskScoresPorProceso.map((proc) => proc.count); // Tamaño basado en el número de planes
     const riskLevels = riskScoresPorProceso.map((proc) => (proc.probability + proc.impact) / 2); // Nivel de riesgo (promedio de probabilidad e impacto)
 
-    // Normalizar el nivel de riesgo entre 0 y 1 (rango de 1 a 5)
-    const normalizedRiskLevels = riskLevels.map((risk) => (risk - 1) / 4);
+    // Normalizar el nivel de riesgo entre 0 y 1 (rango de 1 a 5, pero ajustado para incluir 0)
+    const normalizedRiskLevels = riskLevels.map((risk) => (risk === 0 ? 0 : (risk - 1) / 4));
 
-    // Escala de colores continua (verde claro -> amarillo -> rojo intenso)
+    // Escala de colores original (verde claro -> amarillo -> rojo intenso)
     const colorscale = [
-      [0, "rgba(144, 238, 144, 0.8)"], // Verde claro para riesgo 1
+      [0, "rgba(144, 238, 144, 0.8)"], // Verde claro para riesgo 1 (o 0)
       [0.5, "rgba(255, 255, 102, 0.8)"], // Amarillo para riesgo 3
       [1, "rgba(255, 69, 0, 0.8)"], // Rojo intenso para riesgo 5
     ];
@@ -238,20 +244,29 @@ const PlanAuditoriaDashboard: React.FC = () => {
             width: 0, // Grosor 0 para eliminar el contorno
           },
         },
-        textinfo: "label", // Mostrar el nombre del proceso y el nivel de riesgo
+        textinfo: showLabels ? "label" : "none", // Mostrar u ocultar etiquetas según el estado
+        textposition: "middle center", // Centrar las etiquetas
         textfont: {
           size: 14,
           color: "#fff",
           family: "Roboto",
         },
         hoverinfo: "text",
-        hovertext: riskScoresPorProceso.map(
-          (proc) =>
-            `Proceso: ${proc.nombreProceso}<br>Impacto: ${["Insignificante", "Menor", "Crítico", "Mayor", "Catastrófico"][proc.impact - 1]}<br>Probabilidad: ${["Improbable", "Posible", "Ocasional", "Moderado", "Constante"][proc.probability - 1]}<br>Nivel de Riesgo: ${((proc.probability + proc.impact) / 2).toFixed(1)}<br>Total Actividades: ${proc.count}`
-        ),
+        hovertext: riskScoresPorProceso.map((proc) => {
+          const riskLevel = (proc.probability + proc.impact) / 2;
+          const impactLabels = ["Sin Impacto", "Insignificante", "Menor", "Crítico", "Mayor", "Catastrófico"];
+          const probabilityLabels = ["Sin Probabilidad", "Improbable", "Posible", "Ocasional", "Moderado", "Constante"];
+          const impactIndex = proc.impact >= 0 ? proc.impact : 0;
+          const probabilityIndex = proc.probability >= 0 ? proc.probability : 0;
+          return `Proceso: ${proc.nombreProceso}<br>Impacto: ${impactLabels[impactIndex]}<br>Probabilidad: ${probabilityLabels[probabilityIndex]}<br>Nivel de Riesgo: ${riskLevel === 0 ? "Sin Riesgo" : riskLevel.toFixed(1)}<br>Total Actividades: ${proc.count}`;
+        }),
+        tiling: {
+          pad: 0, // Eliminar cualquier padding entre los rectángulos
+          packing: "squarify", // Usar el algoritmo squarify para un mejor ajuste
+        },
       },
     ];
-  }, [riskScoresPorProceso]);
+  }, [riskScoresPorProceso, showLabels]);
 
   // Layout para el treemap (usamos any para evitar errores de tipado)
   const treemapLayout: any = useMemo(() => ({
@@ -261,7 +276,7 @@ const PlanAuditoriaDashboard: React.FC = () => {
         size: 20,
         family: "Roboto",
         color: "#333",
-        weight: 700, // Cambiar "bold" a 700 para evitar error de tipado
+        weight: 700,
       },
       x: 0.5,
       xanchor: "center",
@@ -299,7 +314,10 @@ const PlanAuditoriaDashboard: React.FC = () => {
       .filter((p) => (p.probability + p.impact) / 2 >= 3 && (p.probability + p.impact) / 2 < 4)
       .map((p) => p.nombreProceso);
     const lowRiskProcesses = riskScoresPorProceso
-      .filter((p) => (p.probability + p.impact) / 2 < 3)
+      .filter((p) => (p.probability + p.impact) / 2 > 0 && (p.probability + p.impact) / 2 < 3)
+      .map((p) => p.nombreProceso);
+    const noRiskProcesses = riskScoresPorProceso
+      .filter((p) => (p.probability + p.impact) / 2 === 0)
       .map((p) => p.nombreProceso);
 
     let analisis = `**Análisis Ejecutivo - ${new Date().toLocaleDateString()}**\n\n`;
@@ -327,6 +345,11 @@ const PlanAuditoriaDashboard: React.FC = () => {
     analisis += `\n### Análisis de Riesgo por Proceso (Treemap)\n`;
     analisis += `- Total de procesos analizados: ${riskScoresPorProceso.length}.\n`;
     analisis += `- Nota: El tamaño de cada rectángulo representa el número de planes. La intensidad del color indica el nivel de riesgo (verde claro = bajo, amarillo = moderado, rojo intenso = alto). El nivel de riesgo se muestra en cada rectángulo. Pase el cursor sobre los rectángulos para ver más detalles.\n`;
+    if (noRiskProcesses.length > 0) {
+      analisis += `- **Sin Riesgo (Nivel de Riesgo = 0):** ${noRiskProcesses.join(", ")}. Estos procesos no presentan riesgo.\n`;
+    } else {
+      analisis += `- No se identificaron procesos sin riesgo.\n`;
+    }
     if (highRiskProcesses.length > 0) {
       analisis += `- **Riesgo Alto (Nivel de Riesgo ≥ 4):** ${highRiskProcesses.join(", ")}. Se requiere acción inmediata para mitigar riesgos.\n`;
     } else {
@@ -338,7 +361,7 @@ const PlanAuditoriaDashboard: React.FC = () => {
       analisis += `- No se identificaron procesos de riesgo moderado.\n`;
     }
     if (lowRiskProcesses.length > 0) {
-      analisis += `- **Riesgo Bajo (Nivel de Riesgo < 3):** ${lowRiskProcesses.join(", ")}. Estos procesos están bajo control.\n`;
+      analisis += `- **Riesgo Bajo (Nivel de Riesgo entre 0 y 3):** ${lowRiskProcesses.join(", ")}. Estos procesos están bajo control.\n`;
     } else {
       analisis += `- No se identificaron procesos de riesgo bajo.\n`;
     }
@@ -400,7 +423,7 @@ const PlanAuditoriaDashboard: React.FC = () => {
                   plugins: {
                     legend: { position: "top", labels: { font: { size: 14 } } },
                     title: {
-                      display: true,
+                      display: false,
                       text: "Cantidad de Semáforos por Proceso",
                       font: { size: 18, weight: "bold" },
                       color: "#333",
@@ -432,8 +455,14 @@ const PlanAuditoriaDashboard: React.FC = () => {
       <div className="row mb-4">
         <div className="col-12">
           <div className="card shadow-sm border-0" style={{ background: "#f8f9fa" }}>
-            <div className="card-header" style={{ backgroundColor: "#800020", color: "white" }}>
+            <div className="card-header d-flex justify-content-between align-items-center" style={{ backgroundColor: "#800020", color: "white" }}>
               <h5 className="card-title mb-0 fw-bold">Análisis de Riesgo por Proceso</h5>
+              <button style={{backgroundColor: "orange", color: "white"}}
+                className="btn btn-light btn-sm"
+                onClick={() => setShowLabels(!showLabels)}
+              >
+                {showLabels ? "Ocultar Etiquetas" : "Mostrar Etiquetas"}
+              </button>
             </div>
             <div className="card-body">
               <div style={{ display: "flex", justifyContent: "center" }}>
@@ -442,7 +471,11 @@ const PlanAuditoriaDashboard: React.FC = () => {
                     data={treemapData}
                     layout={treemapLayout}
                     style={{ width: "100%", maxWidth: "900px", height: "600px" }}
-                    config={{ responsive: true }}
+                    config={{
+                      responsive: true,
+                      displayModeBar: false, // Ocultar la barra de herramientas (incluye el botón de captura)
+                      displaylogo: false, // Ocultar el logo de Plotly
+                    }}
                   />
                 </Suspense>
               </div>

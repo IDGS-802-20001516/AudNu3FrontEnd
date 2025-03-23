@@ -100,6 +100,8 @@ const Dashboard: React.FC = () => {
 
   // Datos del gráfico general
   const generalChartData = useMemo(() => ({
+    plugins: { legend: { display: false } }, // Ocultar los labels
+    responsive: true,
     labels: ["Pendiente", "En Proceso", "Listo"],
     datasets: [{
       label: "Actividades Totales",
@@ -122,7 +124,7 @@ const Dashboard: React.FC = () => {
     ];
 
     return {
-      labels: usuariosOrdenados.map(usuario => usuario.nombreUsuario),
+      labels: usuariosOrdenados.map(() => ""), // Ocultar los labels
       datasets: [{
         label: "Actividades por Auditor",
         data: usuariosOrdenados.map(usuario => preprocessedData.auditorCount[usuario.idUsuario] || 0),

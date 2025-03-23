@@ -4,7 +4,7 @@ import HallazgoForm from "./HallazgosForm";
 import { useNavigate } from "react-router-dom";
 import "./HallazgosList.css";
 import {  Empresa, getEmpresasAll } from "../../services/EmpresaService";
-import { FaEdit, FaTrash, FaEye } from "react-icons/fa";
+import { FaEdit, FaTrash, FaEye, FaCheck, FaXbox, FaExclamation, FaBox, FaXing, FaEject, FaSign } from "react-icons/fa";
 
 // Componente para mostrar el texto completo en un modal
 const ModalInformacionCompleta: React.FC<{
@@ -360,11 +360,11 @@ const HallazgoList: React.FC = () => {
                 <td>{h.fechaCompromiso}</td>
                 <td>
                   {h.cumplido ? (
-                    <span className="badge bg-success p-2">Cumplido</span>
+                    <span className="badge bg-success p-2"><FaCheck></FaCheck></span>
                   ) : (
-                    <span className="badge bg-danger p-2">Pendiente</span>
-                  )}
-                </td>
+                    <span className="badge bg-danger p-2"><FaExclamation></FaExclamation></span>
+                    )}
+                  </td>
                 <td>
                   <div className="d-flex gap-2">
                     {userRole !== 5 && (
