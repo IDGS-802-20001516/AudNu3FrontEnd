@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
+import { Button, Collapse } from "react-bootstrap";
 import { getHallazgos, deleteHallazgo, VistaHallazgo, getAuditorias } from "../../services/HallazgosService";
 import HallazgoForm from "./HallazgosForm";
 import { useNavigate } from "react-router-dom";
 import "./HallazgosList.css";
-import {  Empresa, getEmpresasAll } from "../../services/EmpresaService";
-import { FaEdit, FaTrash, FaEye, FaCheck,  FaExclamation } from "react-icons/fa";
+import { Empresa, getEmpresasAll } from "../../services/EmpresaService";
+import { FaEdit, FaTrash, FaEye, FaCheck, FaExclamation, FaChevronDown, FaChevronUp } from "react-icons/fa";
+import Swal from 'sweetalert2';
 
-// Componente para mostrar el texto completo en un modal
+// Componente para mostrar el texto completo en un modal (sin cambios)
 const ModalInformacionCompleta: React.FC<{
   descripcion: string;
   riesgo: string;
@@ -93,6 +95,7 @@ const ModalInformacionCompleta: React.FC<{
   );
 };
 
+// Componente para mostrar seguimiento y plan de acción en un modal (sin cambios)
 const ModalSeguimiento: React.FC<{
   seguimiento: string;
   planAccion: string;
@@ -175,12 +178,13 @@ const ModalSeguimiento: React.FC<{
 
 const HallazgoList: React.FC = () => {
   const [hallazgos, setHallazgos] = useState<VistaHallazgo[]>([]);
-  const [auditorias, setAuditorias] = useState<{ id_Auditoria: number; nombre_Auditoria: string, nombreAuditoria: string}[]>([]);
+  const [auditorias, setAuditorias] = useState<{ id_Auditoria: number; nombre_Auditoria: string; nombreAuditoria: string }[]>([]);
   const [selectedAuditoria, setSelectedAuditoria] = useState<string>("");
   const [showModal, setShowModal] = useState(false);
   const [selectedHallazgoId, setSelectedHallazgoId] = useState<number | undefined>(undefined);
   const [userRole, setUserRole] = useState<number | null>(null);
   const [userTyP, setUserTyP] = useState<number | null>(null);
+  const [openRows, setOpenRows] = useState<number[]>([]);
   const navigate = useNavigate();
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
 
@@ -238,11 +242,26 @@ const HallazgoList: React.FC = () => {
   };
 
   const handleDelete = async (id: number) => {
-    try {
-      await deleteHallazgo(id);
-      fetchHallazgos();
-    } catch (error) {
-      console.error("Error al eliminar el hallazgo:", error);
+    const result = await Swal.fire({
+      title: "¿Estás seguro?",
+      text: "No podrás revertir esta acción",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#800020",
+      cancelButtonColor: "#6c757d",
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await deleteHallazgo(id);
+        fetchHallazgos();
+        Swal.fire("Éxito", "El hallazgo se ha eliminado correctamente", "success");
+      } catch (error) {
+        console.error("Error al eliminar el hallazgo:", error);
+        Swal.fire("Error", "No se pudo eliminar el hallazgo", "error");
+      }
     }
   };
 
@@ -258,19 +277,19 @@ const HallazgoList: React.FC = () => {
 
   const getSemaforoColor = (semaforo: string) => {
     switch (semaforo) {
-      case "NCA":
-        return "bg-dark text-white";
-      case "NCM":
-        return "bg-danger text-white";
-      case "NCB":
-        return "bg-warning text-dark";
-      case "OM":
-        return "bg-success text-white";
-      case "C":
-        return "bg-primary text-white";
-      default:
-        return "bg-secondary text-white";
+      case "NCA": return "bg-dark text-white";
+      case "NCM": return "bg-danger text-white";
+      case "NCB": return "bg-warning text-dark";
+      case "OM": return "bg-success text-white";
+      case "C": return "bg-primary text-white";
+      default: return "bg-secondary text-white";
     }
+  };
+
+  const toggleRow = (id: number) => {
+    setOpenRows((prev) =>
+      prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]
+    );
   };
 
   const filteredHallazgos = selectedAuditoria
@@ -279,15 +298,10 @@ const HallazgoList: React.FC = () => {
 
   return (
     <div className="container mt-4">
-       <h2 style={{ 
-          fontFamily: 'revert-layer', 
-          color: "#800020", 
-          fontWeight: "bold", 
-          letterSpacing: "1px" 
-        }}>
-          Hallazgos
-        </h2>
-        <br></br>
+      <h2 style={{ fontFamily: 'revert-layer', color: "#800020", fontWeight: "bold", letterSpacing: "1px" }}>
+        Hallazgos
+      </h2>
+      <br />
       {/* Mostrar filtro solo para roles 1, 2 y 3 */}
       {[1, 2, 3].includes(userRole as number) && (
         <div className="d-flex justify-content-between mb-4">
@@ -314,91 +328,140 @@ const HallazgoList: React.FC = () => {
               <th>Empresa</th>
               <th>Proceso</th>
               <th>Actividad</th>
-              <th>Monto Impacto</th>
-              <th>Semaforo</th>
-              <th>Información Completa</th>
-              <th>Plan de Acción y Seguimiento</th>
-              <th>Responsable</th>
-              <th>Fecha de Compromiso</th>
-              <th>Cumplido</th>
-                <th>
-                {userRole === 5 || userRole === 6 ? "" : "Acciones"}
-                </th>
+              <th>Cumplido</th> {/* Nueva columna en la tabla principal */}
+              <th>Detalles</th>
             </tr>
           </thead>
           <tbody>
             {filteredHallazgos.map((h, index) => (
-              <tr key={h.iD_Hallazgo ?? `fallback-${index}`} className="align-middle">
-                <td>{h.nombre_Auditoria}</td>
-                <td>{getEmpresaName(h.idEmpresa)}</td>
-                <td>{h.nombre_Proceso}</td>
-                <td>{h.nombre_Actividad}</td>
-                <td>{h.montoImpacto.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}</td>
-                <td>
-                  <span className={`badge ${getSemaforoColor(h.semaforo)} p-2`}>
-                    {h.semaforo}
-                  </span>
-                </td>
-                <td>
-                  {h.descripcion && (
-                    <ModalInformacionCompleta
-                      descripcion={h.descripcion}
-                      riesgo={h.riesgo}
-                      recomendaciones={h.recomendaciones}
-                      titulo="Información Completa"
-                    />
-                  )}
-                </td>
-                <td>
-                  {h.planAccion && (
-                    <ModalSeguimiento
-                      seguimiento={h.seguimiento || "No hay seguimiento"}
-                      planAccion={h.planAccion}
-                      titulo="Plan de Acción y Seguimiento"
-                    />
-                  )}
-                </td>
-                <td>{h.nombre_Responsable}</td>
-                <td>{h.fechaCompromiso}</td>
-                <td>
-                  {h.cumplido ? (
-                    <span className="badge bg-success p-2"><FaCheck></FaCheck></span>
-                  ) : (
-                    <span className="badge bg-danger p-2"><FaExclamation></FaExclamation></span>
+              <React.Fragment key={h.iD_Hallazgo ?? `fallback-${index}`}>
+                <tr className="align-middle">
+                  <td>{h.nombre_Auditoria}</td>
+                  <td>{getEmpresaName(h.idEmpresa)}</td>
+                  <td>{h.nombre_Proceso}</td>
+                  <td>{h.nombre_Actividad}</td>
+                  <td>
+                    {h.cumplido ? (
+                      <span className="badge bg-success p-3" style={{ fontSize: "0.4rem" }}>
+                        <FaCheck style={{ fontSize: "0.6rem" }} />
+                      </span>
+                    ) : (
+                      <span className="badge bg-danger p-3" style={{ fontSize: "0.4rem" }}>
+                        <FaExclamation style={{ fontSize: "0.6rem" }} />
+                      </span>
                     )}
                   </td>
-                <td>
-                    <div className="d-flex gap-2">
-                    {userRole !== 5 && userRole !== 6 && (
-                      <>
-                      {userRole === 4 ? (
-                        <button
-                        onClick={() => handleOpenModal(h.iD_Hallazgo)}
-                        className="btn btn-outline-primary btn-sm"
-                        >
-                        Editar Seguimiento
-                        </button>
-                      ) : (
-                        <>
-                        <button
-                          onClick={() => handleOpenModal(h.iD_Hallazgo)}
-                          className="btn btn-outline-primary btn-sm"
-                        >
-                          <FaEdit className="me-1" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(h.iD_Hallazgo)}
-                          className="btn btn-outline-danger btn-sm"
-                        >
-                          <FaTrash className="me-1" />
-                        </button>
-                        </>
-                      )}
-                      </>
-                    )}
-                    </div>
-                </td>
-              </tr>
+                  <td>
+                    <Button
+                      variant="link"
+                      onClick={() => toggleRow(h.iD_Hallazgo ?? index)}
+                    >
+                      {openRows.includes(h.iD_Hallazgo ?? index) ? <FaChevronUp /> : <FaChevronDown />}
+                    </Button>
+                  </td>
+                </tr>
+                <tr>
+                  <td colSpan={6}> {/* Ajustamos el colSpan a 6 por la nueva columna */}
+                    <Collapse in={openRows.includes(h.iD_Hallazgo ?? index)}>
+                      <div className="p-3 bg-light border rounded">
+                        <div className="row">
+                          <div className="col-md-3 d-flex flex-column align-items-center text-center">
+                            <strong>Monto Impacto</strong>
+                            <span className="mt-2">
+                              {h.montoImpacto.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}
+                            </span>
+                          </div>
+                          <div className="col-md-3 d-flex flex-column align-items-center text-center">
+                            <strong>Semaforo</strong>
+                            <span
+                              className={`mt-2 badge ${getSemaforoColor(h.semaforo)} p-3`}
+                              style={{
+                                borderRadius: "50%",
+                                fontWeight: "bold",
+                                fontSize: "0.7rem",
+                                width: "3rem",
+                                height: "3rem",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                            >
+                              {h.semaforo}
+                            </span>
+                          </div>
+                          <div className="col-md-3 d-flex flex-column align-items-center text-center">
+                            <strong>Información Completa</strong>
+                            <span className="mt-2">
+                              {h.descripcion && (
+                                <ModalInformacionCompleta
+                                  descripcion={h.descripcion}
+                                  riesgo={h.riesgo}
+                                  recomendaciones={h.recomendaciones}
+                                  titulo="Información Completa"
+                                />
+                              )}
+                            </span>
+                          </div>
+                          <div className="col-md-3 d-flex flex-column align-items-center text-center">
+                            <strong>Plan de Acción y Seguimiento</strong>
+                            <span className="mt-2">
+                              {h.planAccion && (
+                                <ModalSeguimiento
+                                  seguimiento={h.seguimiento || "No hay seguimiento"}
+                                  planAccion={h.planAccion}
+                                  titulo="Plan de Acción y Seguimiento"
+                                />
+                              )}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="row mt-3">
+                          <div className="col-md-4 d-flex flex-column align-items-center text-center">
+                            <strong>Responsable</strong>
+                            <span className="mt-2">{h.nombre_Responsable}</span>
+                          </div>
+                          <div className="col-md-4 d-flex flex-column align-items-center text-center">
+                            <strong>Fecha de Compromiso</strong>
+                            <span className="mt-2">{h.fechaCompromiso}</span>
+                          </div>
+                          <div className="col-md-4 d-flex flex-column align-items-center text-center">
+                            {userRole !== 5 && userRole !== 6 && (
+                              <>
+                                <strong>Acciones</strong>
+                                <div className="mt-2 d-flex gap-2">
+                                  {userRole === 4 ? (
+                                    <button
+                                      onClick={() => handleOpenModal(h.iD_Hallazgo)}
+                                      className="btn btn-outline-primary btn-sm"
+                                    >
+                                      Editar Seguimiento
+                                    </button>
+                                  ) : (
+                                    <>
+                                      <button
+                                        onClick={() => handleOpenModal(h.iD_Hallazgo)}
+                                        className="btn btn-outline-primary btn-sm"
+                                      >
+                                        <FaEdit className="me-1" />
+                                      </button>
+                                      <button
+                                        onClick={() => handleDelete(h.iD_Hallazgo)}
+                                        className="btn btn-outline-danger btn-sm"
+                                      >
+                                        <FaTrash className="me-1" />
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </Collapse>
+                  </td>
+                </tr>
+              </React.Fragment>
             ))}
           </tbody>
         </table>

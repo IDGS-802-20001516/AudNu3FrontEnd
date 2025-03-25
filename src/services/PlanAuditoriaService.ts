@@ -94,11 +94,26 @@ export const getPlanAuditoriaById = async (id: number): Promise<PlanAuditoria> =
 };
 
 export const createPlanAuditoria = async (planAuditoria: Omit<PlanAuditoria, 'idPlanAuditoria'>): Promise<PlanAuditoria> => {
-  return fetchData<PlanAuditoria>(ENDPOINTS.PLAN_AUDITORIA, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(planAuditoria),
-  });
+  try {
+    const response = await fetch(ENDPOINTS.PLAN_AUDITORIA, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(planAuditoria),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      Swal.fire('Error', errorText || 'Error al crear el plan de auditoría', 'error');
+      throw new Error(errorText || 'Error al crear el plan de auditoría');
+    }
+
+    const data = await response.json();
+    Swal.fire('Éxito', 'Plan de auditoría creado correctamente', 'success');
+    return data;
+  } catch (error) {
+    Swal.fire('Error', (error as Error).message, 'error');
+    throw error;
+  }
 };
 
 export const updatePlanAuditoria = async (id: number, planAuditoria: PlanAuditoria): Promise<PlanAuditoria> => {
@@ -126,13 +141,14 @@ export const savePlanAuditoria = async (planAuditoria: PlanAuditoria) => {
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error("Error del servidor:", errorData);
+      Swal.fire('Error', `Error del servidor: ${response.status} - ${response.statusText}`, 'error');
       throw new Error(`Error: ${response.status} - ${response.statusText}`);
     }
 
+    Swal.fire('Éxito', 'Plan de auditoría guardado correctamente', 'success');
     return await response.json();
   } catch (error) {
+    Swal.fire('Error', 'Error al guardar el plan de auditoría', 'error');
     console.error("Error al guardar el plan de auditoría:", error);
     throw error;
   }

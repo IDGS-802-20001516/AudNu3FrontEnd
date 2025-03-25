@@ -81,23 +81,33 @@ const Dashboard: React.FC = () => {
         ? auditoriasUnicas.find(a => a.id === selectedAuditoria)?.nombre || "desconocida"
         : "todas las auditorías";
       if (pendientes > 0) {
-        toast.info(`Existen ${pendientes} actividades pendientes en ${auditoriaNombre}`, {
+        toast.warning(`Existen ${pendientes} actividades pendientes en ${auditoriaNombre}`, {
           position: "top-right",
-          autoClose: 2000,
+          autoClose: 4000,
           hideProgressBar: false,
           closeOnClick: true,
           pauseOnHover: true,
           draggable: true,
           toastId: "pendientes-toast",
+          style: {
+            background: "#800020",
+            fontFamily: 'cursive', 
+            color: "#fff",        // Color del texto blanco
+          },
         });
       } else {
-        toast.info(`No tienes actividades pendientes en ${auditoriaNombre}`, {
+        toast.success(`No tienes actividades pendientes en ${auditoriaNombre}`, {
           position: "top-right",
-          autoClose: 5000,
+          autoClose: 4000,
           hideProgressBar: false,
           closeOnClick: true,
           pauseOnHover: true,
           toastId: "pendientes-toast",
+          style: {
+            background: "#00913f",
+            fontFamily: 'cursive', 
+            color: "#fff",        // Color del texto blanco
+          },
         });
       }
     }

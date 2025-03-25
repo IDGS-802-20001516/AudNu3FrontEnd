@@ -409,7 +409,7 @@ const PlanAuditoriaDashboard: React.FC = () => {
   return (
     <div className="container mt-5">
       <h2 className="mb-4 text-center fw-bold" style={{ fontFamily: "Roboto", color: "#333" }}>
-        Tablero Ejecutivo - Plan de Auditoría
+        Dashboard del Plan de Auditoría
       </h2>
 
       {/* Dropdown para seleccionar auditoría */}

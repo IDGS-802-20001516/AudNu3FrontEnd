@@ -1,16 +1,17 @@
 import React, { useEffect, useState } from "react";
-import { Button, Form, Modal, Card } from "react-bootstrap";
+import { Button, Form, Modal, Card, Collapse } from "react-bootstrap";
 import Table from 'react-bootstrap/Table';
-import { getPlanesAuditoria, deletePlanAuditoria,  getActividades, getProcesos, getUsuario } from "../../services/PlanAuditoriaService";
+import { getPlanesAuditoria, deletePlanAuditoria, getActividades, getProcesos, getUsuario } from "../../services/PlanAuditoriaService";
 import { PlanAuditoria } from "../../services/PlanAuditoriaService";
 import PlanAuditoriaForm from "./PlanAuditoriaForm";
 import "../../styles/cards.css";
-import { FaEdit, FaTrash, FaPlus, FaEye } from "react-icons/fa"; // Agregamos FaEye
+import { FaEdit, FaTrash, FaPlus, FaEye, FaChevronDown, FaChevronUp } from "react-icons/fa";
 import Swal from 'sweetalert2';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import "../PlanAuditoria/planAud.css";
 import HallazgoForm from "../Hallazgos/HallazgosForm";
 import { getAllAuditorias } from "../../services/AuditoriaService";
+import { FaCheck, FaExclamation } from "react-icons/fa";
 
 const PlanAuditoriaList: React.FC = () => {
   const [planAuditorias, setPlanAuditoria] = useState<PlanAuditoria[]>([]);
@@ -26,8 +27,9 @@ const PlanAuditoriaList: React.FC = () => {
   const [selectedActividadId, setSelectedActividadId] = useState<number | undefined>(undefined);
   const [idAuditor, setIdAuditor] = useState<number | null>(null);
   const [userRole, setUserRole] = useState<number | null>(null);
-  const [showCriterioModal, setShowCriterioModal] = useState(false); // Estado para el modal de criterio
-  const [selectedCriterio, setSelectedCriterio] = useState<string>(""); // Estado para el criterio seleccionado
+  const [showCriterioModal, setShowCriterioModal] = useState(false);
+  const [selectedCriterio, setSelectedCriterio] = useState<string>("");
+  const [openRows, setOpenRows] = useState<number[]>([]);
 
   useEffect(() => {
     fetchPlanes();
@@ -139,17 +141,30 @@ const PlanAuditoriaList: React.FC = () => {
   };
 
   const handleDelete = async (id: number) => {
-    try {
-      await deletePlanAuditoria(id);
-      const updatedPlanes = planAuditorias.map(plan =>
-        plan.idPlanAuditoria === id ? { ...plan, estatus: false } : plan
-      );
-      setPlanAuditoria(updatedPlanes);
-      setFilteredPlanes(updatedPlanes);
-      Swal.fire("Éxito", "El plan de auditoría se ha desactivado correctamente", "success");
-    } catch (error) {
-      console.error("Error al eliminar el plan de auditoría:", error);
-      Swal.fire("Error", "No se pudo desactivar el plan de auditoría", "error");
+    const result = await Swal.fire({
+      title: "¿Estás seguro?",
+      text: "No podrás revertir esta acción",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#800020",
+      cancelButtonColor: "#6c757d",
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await deletePlanAuditoria(id);
+        const updatedPlanes = planAuditorias.map(plan =>
+          plan.idPlanAuditoria === id ? { ...plan, estatus: false } : plan
+        );
+        setPlanAuditoria(updatedPlanes);
+        setFilteredPlanes(updatedPlanes);
+        Swal.fire("Éxito", "El plan de auditoría se ha desactivado correctamente", "success");
+      } catch (error) {
+        console.error("Error al eliminar el plan de auditoría:", error);
+        Swal.fire("Error", "No se pudo desactivar el plan de auditoría", "error");
+      }
     }
   };
 
@@ -182,16 +197,17 @@ const PlanAuditoriaList: React.FC = () => {
     }
   };
 
+  const toggleRow = (id: number) => {
+    setOpenRows((prev) =>
+      prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]
+    );
+  };
+
   return (
     <div className="container mt-5 animate__animated animate__fadeIn">
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2 style={{ 
-          fontFamily: 'revert-layer', 
-          color: "#800020", 
-          fontWeight: "bold", 
-          letterSpacing: "1px" 
-        }}>
-          Plan de Auditorias 
+        <h2 style={{ fontFamily: 'revert-layer', color: "#800020", fontWeight: "bold", letterSpacing: "1px" }}>
+          Plan de Auditorias
         </h2>
         <div className="d-flex gap-3">
           <Form.Select
@@ -207,9 +223,9 @@ const PlanAuditoriaList: React.FC = () => {
             ))}
           </Form.Select>
           <button
-          onClick={() => handleOpenModal(undefined)} // Aseguramos que id sea undefined para nuevo registro
-          className="btn btn-primary shadow-sm d-flex align-items-center"
-          style={{ backgroundColor: "#800020", borderColor: "#800020" }}
+            onClick={() => handleOpenModal(undefined)}
+            className="btn btn-primary shadow-sm d-flex align-items-center"
+            style={{ backgroundColor: "#800020", borderColor: "#800020" }}
           >
             <FaPlus className="me-2" /> Nueva Actividad
           </button>
@@ -223,101 +239,138 @@ const PlanAuditoriaList: React.FC = () => {
               <th>Auditoria</th>
               <th>Proceso</th>
               <th>Actividad</th>
-              <th>Criterio</th> {/* Nueva columna para el ícono */}
-              <th>Auditor</th>
-              <th>Fecha de Inicio</th>
-              <th>Fecha de Finalización</th>
               <th>Estado</th>
-              <th>Semaforo</th>
-              <th>Redacción</th>
-              <th>Revisado</th>
-              <th>Comentarios</th>
-              <th>Acciones</th>
+              <th>Detalles</th>
             </tr>
           </thead>
           <tbody>
             {filteredPlanes
               .filter(plan => plan.estatus)
               .map((plan) => (
-                <tr key={plan.idPlanAuditoria}>
-                  <td>
-                    {(userRole !== 5 || plan.idAuditor === idAuditor) && (
-                      <Button
-                        variant="outline-warning"
-                        size="sm"
-                        onClick={() => handleOpenHallazgoModal(plan.idPlanAuditoria, plan.idActividad)}
-                      >
-                        📋
-                      </Button>
-                    )}
-                  </td>
-                  <td>{getNombreAuditorias(plan.id_Auditoria)}</td>
-                  <td>{getNombreProcesos(plan.idProceso)}</td>
-                  <td>{getNombreActividades(plan.idActividad)}</td>
-                  <td>
-                    <Button
-                      variant="outline-warning"
-                      size="sm"
-                      onClick={() => handleOpenCriterioModal(plan.idActividad)}
-                    >
-                      <FaEye />
-                    </Button>
-                  </td>
-                  <td>{getNombreUsuario(plan.idAuditor)}</td>
-                  <td>{new Date(plan.fechaInicio).toLocaleDateString()}</td>
-                  <td>{plan.fechaFin ? new Date(plan.fechaFin).toLocaleDateString() : "Sin Fecha"}</td>
+                <React.Fragment key={plan.idPlanAuditoria}>
+                  <tr>
                     <td>
-                    {plan.estado === "Listo" && (
-                      <span className="badge bg-success">Listo</span>
-                    )}
-                    {plan.estado === "Pendiente" && (
-                      <span className="badge bg-danger">Pendiente</span>
-                    )}
-                    {plan.estado === "En Proceso" && (
-                      <span className="badge bg-warning text-dark">En Proceso</span>
-                    )}
+                      {(userRole !== 5 || plan.idAuditor === idAuditor) && (
+                        <Button
+                          variant="outline-warning"
+                          size="sm"
+                          onClick={() => handleOpenHallazgoModal(plan.idPlanAuditoria, plan.idActividad)}
+                        >
+                          📋
+                        </Button>
+                      )}
                     </td>
-                  <td>
-                    <span className={`badge ${getSemaforoColor(plan.semaforo)}`}>
-                      {plan.semaforo}
-                    </span>
-                  </td>
-                  <td>
-                    {plan.redaccion ? (
-                      <span className="badge bg-success">OK</span>
-                    ) : (
-                      <span className="badge bg-danger">NO</span>
-                    )}
-                  </td>
-                  <td>
-                    {plan.revisado ? (
-                      <span className="badge bg-success">OK</span>
-                    ) : (
-                      <span className="badge bg-danger">NO</span>
-                    )}
-                  </td>
-                  <td>{plan.comentarios}</td>
-                  <td>
-                    {(userRole !== 3 || plan.idAuditor === idAuditor) && (
-                      <>
-                        <Button
-                          variant="outline-primary"
-                          className="btn btn-outline-primary btn-sm"
-                          onClick={() => handleOpenModal(plan.idPlanAuditoria)}
-                        >
-                          <FaEdit className="me-1" />
-                        </Button>
-                        <Button
-                          variant="outline-danger"
-                          className="btn btn-outline-primary btn-sm"
-                          onClick={() => handleDelete(plan.idPlanAuditoria)}
-                        >
-                          <FaTrash className="me-1" />
-                        </Button>
-                      </>
-                    )}
-                  </td>
-                </tr>
+                    <td>{getNombreAuditorias(plan.id_Auditoria)}</td>
+                    <td>{getNombreProcesos(plan.idProceso)}</td>
+                    <td>{getNombreActividades(plan.idActividad)}</td>
+                    <td>
+                      {plan.estado === "Listo" && (
+                        <span className="badge bg-success" style={{ fontSize: "0.7rem", padding: "10px" }}>
+                          Listo
+                        </span>
+                      )}
+                      {plan.estado === "Pendiente" && (
+                        <span className="badge bg-danger" style={{ fontSize: "0.6rem", padding: "10px" }}>
+                          Pendiente
+                        </span>
+                      )}
+                      {plan.estado === "En Proceso" && (
+                        <span className="badge bg-warning text-dark" style={{ fontSize: "0.6rem", padding: "10px" }}>
+                          En Proceso
+                        </span>
+                      )}
+                    </td>
+                    <td>
+                      <Button
+                        variant="link"
+                        onClick={() => toggleRow(plan.idPlanAuditoria)}
+                      >
+                        {openRows.includes(plan.idPlanAuditoria) ? <FaChevronUp /> : <FaChevronDown />}
+                      </Button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td colSpan={6}>
+                      <Collapse in={openRows.includes(plan.idPlanAuditoria)}>
+                        <div className="p-3 bg-light border rounded">
+                          <div className="row">
+                            <div className="col-md-3 d-flex flex-column align-items-center text-center">
+                              <strong>Criterio</strong>
+                              <Button
+                                variant="outline-warning"
+                                size="sm"
+                                className="mt-2"
+                                onClick={() => handleOpenCriterioModal(plan.idActividad)}
+                              >
+                                <FaEye />
+                              </Button>
+                            </div>
+                            <div className="col-md-3 d-flex flex-column align-items-center text-center">
+                              <strong>Auditor</strong>
+                                <span className="mt-2"><strong>{getNombreUsuario(plan.idAuditor)}</strong></span>
+                            </div>
+                            <div className="col-md-3 d-flex flex-column align-items-center text-center">
+                              <strong>Fecha de Inicio</strong>
+                              <span className="mt-2">{new Date(plan.fechaInicio).toLocaleDateString()}</span>
+                            </div>
+                            <div className="col-md-3 d-flex flex-column align-items-center text-center">
+                              <strong>Fecha de Finalización</strong>
+                              <span className="mt-2">{plan.fechaFin ? new Date(plan.fechaFin).toLocaleDateString() : "Sin Fecha"}</span>
+                            </div>
+                          </div>
+                          <div className="row mt-3">
+                            <div className="col-md-3 d-flex flex-column align-items-center text-center">
+                              <strong>Semaforo</strong>
+                              <div
+                                className={`mt-2 d-flex justify-content-center align-items-center rounded-circle ${getSemaforoColor(plan.semaforo)}`}
+                                style={{ width: "40px", height: "40px", fontSize: "0.8rem", fontWeight: "bold" }}
+                              >
+                                {plan.semaforo}
+                              </div>
+                            </div>
+                            <div className="col-md-3 d-flex flex-column align-items-center text-center">
+                              <strong>Redacción</strong>
+                              <span className="mt-2">
+                                {plan.redaccion ? <span className="badge bg-success p-2"><FaCheck /></span> : <span className="badge bg-danger p-2"><FaExclamation /></span>}
+                              </span>
+                            </div>
+                            <div className="col-md-3 d-flex flex-column align-items-center text-center">
+                              <strong>Revisado</strong>
+                              <span className="mt-2">
+                                {plan.revisado ? <span className="badge bg-success p-2"><FaCheck /></span> : <span className="badge bg-danger p-2"><FaExclamation /></span>}
+                              </span>
+                            </div>
+                            <div className="col-md-3 d-flex flex-column align-items-center text-center">
+                              <strong>Comentarios</strong>
+                              <span className="mt-2">{plan.comentarios || "N/A"}</span>
+                            </div>
+                          </div>
+                          <br></br>
+                          {(userRole !== 3 || plan.idAuditor === idAuditor) && (
+                            <div className="mt-3 text-center">
+                            
+                              <Button
+                                variant="outline-primary"
+                                className="me-2"
+                                size="sm"
+                                onClick={() => handleOpenModal(plan.idPlanAuditoria)}
+                              >
+                                <FaEdit className="me-1" /> Editar
+                              </Button>
+                              <Button
+                                variant="outline-danger"
+                                size="sm"
+                                onClick={() => handleDelete(plan.idPlanAuditoria)}
+                              >
+                                <FaTrash className="me-1" /> Eliminar
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </Collapse>
+                    </td>
+                  </tr>
+                </React.Fragment>
               ))}
           </tbody>
         </Table>
