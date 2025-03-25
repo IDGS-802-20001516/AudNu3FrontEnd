@@ -248,7 +248,7 @@ const PlanAuditoriaList: React.FC = () => {
               .filter(plan => plan.estatus)
               .map((plan) => (
                 <React.Fragment key={plan.idPlanAuditoria}>
-                  <tr>
+                  <tr className="table-row">
                     <td>
                       {(userRole !== 5 || plan.idAuditor === idAuditor) && (
                         <Button
@@ -307,7 +307,7 @@ const PlanAuditoriaList: React.FC = () => {
                             </div>
                             <div className="col-md-3 d-flex flex-column align-items-center text-center">
                               <strong>Auditor</strong>
-                                <span className="mt-2"><strong>{getNombreUsuario(plan.idAuditor)}</strong></span>
+                              <span className="mt-2"><strong>{getNombreUsuario(plan.idAuditor)}</strong></span>
                             </div>
                             <div className="col-md-3 d-flex flex-column align-items-center text-center">
                               <strong>Fecha de Inicio</strong>
@@ -348,7 +348,6 @@ const PlanAuditoriaList: React.FC = () => {
                           <br></br>
                           {(userRole !== 3 || plan.idAuditor === idAuditor) && (
                             <div className="mt-3 text-center">
-                            
                               <Button
                                 variant="outline-primary"
                                 className="me-2"

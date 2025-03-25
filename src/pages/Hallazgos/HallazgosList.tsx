@@ -8,7 +8,7 @@ import { Empresa, getEmpresasAll } from "../../services/EmpresaService";
 import { FaEdit, FaTrash, FaEye, FaCheck, FaExclamation, FaChevronDown, FaChevronUp } from "react-icons/fa";
 import Swal from 'sweetalert2';
 
-// Componente para mostrar el texto completo en un modal (sin cambios)
+// Componente para mostrar el texto completo en un modal
 const ModalInformacionCompleta: React.FC<{
   descripcion: string;
   riesgo: string;
@@ -95,7 +95,7 @@ const ModalInformacionCompleta: React.FC<{
   );
 };
 
-// Componente para mostrar seguimiento y plan de acción en un modal (sin cambios)
+// Componente para mostrar seguimiento y plan de acción en un modal
 const ModalSeguimiento: React.FC<{
   seguimiento: string;
   planAccion: string;
@@ -140,7 +140,7 @@ const ModalSeguimiento: React.FC<{
                   <div className="card mb-4 border-0 shadow-sm">
                     <div className="card-header bg-primary text-white rounded-top">
                       <h5 className="mb-0">Plan de Acción</h5>
-                    </div>
+ maje                    </div>
                     <div className="card-body p-3 bg-light">
                       <p className="text-muted lead" style={{ whiteSpace: "pre-wrap" }}>
                         {planAccion}
@@ -328,14 +328,14 @@ const HallazgoList: React.FC = () => {
               <th>Empresa</th>
               <th>Proceso</th>
               <th>Actividad</th>
-              <th>Cumplido</th> {/* Nueva columna en la tabla principal */}
+              <th>Cumplido</th>
               <th>Detalles</th>
             </tr>
           </thead>
           <tbody>
             {filteredHallazgos.map((h, index) => (
               <React.Fragment key={h.iD_Hallazgo ?? `fallback-${index}`}>
-                <tr className="align-middle">
+                <tr className="table-row align-middle">
                   <td>{h.nombre_Auditoria}</td>
                   <td>{getEmpresaName(h.idEmpresa)}</td>
                   <td>{h.nombre_Proceso}</td>
@@ -361,7 +361,7 @@ const HallazgoList: React.FC = () => {
                   </td>
                 </tr>
                 <tr>
-                  <td colSpan={6}> {/* Ajustamos el colSpan a 6 por la nueva columna */}
+                  <td colSpan={6}>
                     <Collapse in={openRows.includes(h.iD_Hallazgo ?? index)}>
                       <div className="p-3 bg-light border rounded">
                         <div className="row">

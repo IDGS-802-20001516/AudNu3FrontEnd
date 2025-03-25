@@ -1,152 +1,185 @@
 /* Estilos personalizados para los modales dentro de hallazgos-modal-container */
 .hallazgos-modal-container .bg-gradient-primary {
-    background: linear-gradient(90deg, #800020);
-  }
-  
-  .hallazgos-modal-container .bg-gradient-success {
-    background: linear-gradient(90deg, #28a745, #218838);
-  }
-  
-  .hallazgos-modal-container .modal-content {
-    border-radius: 0.75rem !important;
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-    transition: all 0.3s ease-in-out;
-  }
-  
-  .hallazgos-modal-container .modal-header {
-    padding: 1.5rem;
-    border-bottom: none !important;
-  }
-  
-  .hallazgos-modal-container .modal-body {
-    padding: 0;
-  }
-  
-  .hallazgos-modal-container .card {
-    border: none !important;
-    margin-bottom: 1.5rem;
-  }
-  
-  .hallazgos-modal-container .card-header {
-    padding: 1rem 1.5rem;
-    border-radius: 0.5rem 0.5rem 0 0 !important;
-    font-family: "Roboto", sans-serif;
-    font-weight: 600;
-  }
-  
-  .hallazgos-modal-container .card-body {
-    padding: 1.5rem;
-    background-color: #f8f9fa;
-    border-radius: 0 0 0.5rem 0.5rem;
-  }
-  
-  .hallazgos-modal-container .btn-outline-primary,
-  .hallazgos-modal-container .btn-outline-success,
-  .hallazgos-modal-container .btn-outline-danger {
-    border-width: 2px;
-    transition: all 0.3s ease;
-  }
-  
-  .hallazgos-modal-container .btn-outline-primary:hover {
-    background-color: #007bff;
-    color: white;
-  }
-  
-  .hallazgos-modal-container .btn-outline-success:hover {
-    background-color: #28a745;
-    color: white;
-  }
-  
-  .hallazgos-modal-container .btn-outline-danger:hover {
-    background-color: #dc3545;
-    color: white;
-  }
-  
-  .hallazgos-modal-container .btn-lg {
-    padding: 0.75rem 1.5rem;
-    font-size: 1.1rem;
-  }
-  
-  .hallazgos-modal-container .lead {
-    font-size: 1.15rem !important;
-    line-height: 1.6;
-  }
-  
-  .hallazgos-modal-container .text-muted {
-    color: #6c757d !important;
-  }
-  
-  .hallazgos-modal-container .text-warning {
-    color: #ffc107 !important;
-  }
-  
-  .hallazgos-modal-container .text-success {
-    color: #28a745 !important;
-  }
-  
-  /* Estilos específicos para los formularios dentro de hallazgos-modal-container */
-  .hallazgos-modal-container .modal-dialog-scrollable .modal-body {
-    padding: 1.5rem;
-  }
-  
-  .hallazgos-modal-container .modal-body form {
-    max-height: 80vh;
-    overflow-y: auto;
-  }
-  
-  .hallazgos-modal-container .modal-body form .form-control,
-  .hallazgos-modal-container .modal-body form .form-select {
-    border-radius: 0.5rem;
-    border-color: #ced4da;
-    transition: border-color 0.3s ease;
-  }
-  
-  .hallazgos-modal-container .modal-body form .form-control:focus,
-  .hallazgos-modal-container .modal-body form .form-select:focus {
-    border-color: #007bff;
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-  }
-  
-  .hallazgos-modal-container .modal-body form .invalid-feedback {
-    font-size: 0.9rem;
-    margin-top: 0.25rem;
-  }
-  
-  .hallazgos-modal-container .modal-body form .form-check-input {
-    margin-top: 0.3rem;
-  }
-  
-  .hallazgos-modal-container .modal-body form .form-check-label {
-    margin-left: 0.5rem;
-  }
-  
-  .hallazgos-modal-container .modal-body form .btn {
-    min-width: 120px;
-    transition: all 0.3s ease;
-  }
-  
-  .hallazgos-modal-container .modal-body form .btn:hover {
-    transform: translateY(-2px);
-  }
-  
-  /* Estilos para la tabla en HallazgoList */
-  .hallazgos-modal-container .table-responsive .table {
-    border-radius: 0.5rem;
-    overflow: hidden;
-  }
-  
-  .hallazgos-modal-container .table-responsive .table thead {
-    background-color: #343a40;
-    color: white;
-  }
-  
-  .hallazgos-modal-container .table-responsive .table tbody tr:hover {
-    background-color: #f1f1f1;
-  }
-  
-  .hallazgos-modal-container .badge {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.9rem;
-  }
+  background: linear-gradient(90deg, #800020);
+}
 
-  
+.hallazgos-modal-container .bg-gradient-success {
+  background: linear-gradient(90deg, #28a745, #218838);
+}
+
+.hallazgos-modal-container .modal-content {
+  border-radius: 0.75rem !important;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease-in-out;
+}
+
+.hallazgos-modal-container .modal-header {
+  padding: 1.5rem;
+  border-bottom: none !important;
+}
+
+.hallazgos-modal-container .modal-body {
+  padding: 0;
+}
+
+.hallazgos-modal-container .card {
+  border: none !important;
+  margin-bottom: 1.5rem;
+}
+
+.hallazgos-modal-container .card-header {
+  padding: 1rem 1.5rem;
+  border-radius: 0.5rem 0.5rem 0 0 !important;
+  font-family: "Roboto", sans-serif;
+  font-weight: 600;
+}
+
+.hallazgos-modal-container .card-body {
+  padding: 1.5rem;
+  background-color: #f8f9fa;
+  border-radius: 0 0 0.5rem 0.5rem;
+}
+
+.hallazgos-modal-container .btn-outline-primary,
+.hallazgos-modal-container .btn-outline-success,
+.hallazgos-modal-container .btn-outline-danger {
+  border-width: 2px;
+  transition: all 0.3s ease;
+}
+
+.hallazgos-modal-container .btn-outline-primary:hover {
+  background-color: #007bff;
+  color: white;
+}
+
+.hallazgos-modal-container .btn-outline-success:hover {
+  background-color: #28a745;
+  color: white;
+}
+
+.hallazgos-modal-container .btn-outline-danger:hover {
+  background-color: #dc3545;
+  color: white;
+}
+
+.hallazgos-modal-container .btn-lg {
+  padding: 0.75rem 1.5rem;
+  font-size: 1.1rem;
+}
+
+.hallazgos-modal-container .lead {
+  font-size: 1.15rem !important;
+  line-height: 1.6;
+}
+
+.hallazgos-modal-container .text-muted {
+  color: #6c757d !important;
+}
+
+.hallazgos-modal-container .text-warning {
+  color: #ffc107 !important;
+}
+
+.hallazgos-modal-container .text-success {
+  color: #28a745 !important;
+}
+
+/* Estilos específicos para los formularios dentro de hallazgos-modal-container */
+.hallazgos-modal-container .modal-dialog-scrollable .modal-body {
+  padding: 1.5rem;
+}
+
+.hallazgos-modal-container .modal-body form {
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.hallazgos-modal-container .modal-body form .form-control,
+.hallazgos-modal-container .modal-body form .form-select {
+  border-radius: 0.5rem;
+  border-color: #ced4da;
+  transition: border-color 0.3s ease;
+}
+
+.hallazgos-modal-container .modal-body form .form-control:focus,
+.hallazgos-modal-container .modal-body form .form-select:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.hallazgos-modal-container .modal-body form .invalid-feedback {
+  font-size: 0.9rem;
+  margin-top: 0.25rem;
+}
+
+.hallazgos-modal-container .modal-body form .form-check-input {
+  margin-top: 0.3rem;
+}
+
+.hallazgos-modal-container .modal-body form .form-check-label {
+  margin-left: 0.5rem;
+}
+
+.hallazgos-modal-container .modal-body form .btn {
+  min-width: 120px;
+  transition: all 0.3s ease;
+}
+
+.hallazgos-modal-container .modal-body form .btn:hover {
+  transform: translateY(-2px);
+}
+
+/* Estilos para la tabla en HallazgoList */
+.hallazgos-modal-container .table-responsive .table {
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.hallazgos-modal-container .table-responsive .table thead {
+  background-color: #343a40;
+  color: white;
+}
+
+/* Estilos para las filas con efectos hover */
+.table-row {
+  transition: all 0.3s ease;
+}
+
+.table-row:hover {
+  background-color: #f8e1e1; /* Color tenue rojizo relacionado con #800020 */
+  transform: scale(1.02); /* Zoom sutil */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Sombra ligera */
+  cursor: pointer;
+}
+
+.table-row td {
+  transition: all 0.3s ease;
+}
+
+/* Ajustes para mantener la consistencia */
+.table-responsive {
+  overflow-x: auto;
+}
+
+.table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table th, .table td {
+  vertical-align: middle;
+}
+
+.table-danger {
+  background-color: #800020;
+  color: white;
+}
+
+.bg-light {
+  transition: all 0.3s ease;
+}
+
+.hallazgos-modal-container .badge {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+}

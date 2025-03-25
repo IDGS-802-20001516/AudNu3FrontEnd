@@ -12,3 +12,26 @@ align-content: center;
     font-size: 13px;
 
 }
+
+/* Estilos para la fila en estado normal */
+.table-row {
+    transition: all 0.3s ease;
+  }
+  
+  /* Estilos cuando el cursor está sobre la fila */
+  .table-row:hover {
+    background-color: #da2929; /* Color tenue rojizo, puedes ajustarlo */
+    transform: scale(1.02); /* Zoom sutil */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Sombra ligera */
+    cursor: pointer;
+  }
+  
+  /* Asegurar que la transición sea suave para los elementos hijos */
+  .table-row td {
+    transition: all 0.3s ease;
+  }
+  
+  /* Evitar que el zoom afecte el layout general */
+  .table-responsive {
+    overflow-x: auto;
+  }
