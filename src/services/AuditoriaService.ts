@@ -54,39 +54,43 @@ export const createAuditoria = async (auditoria: Omit<Auditoria, 'id_Auditoria'>
 };
 
 export const updateAuditoria = async (id: number, auditoria: Auditoria): Promise<Auditoria> => {
+  console.log("Datos enviados para actualizar la auditoría:", { id, auditoria });
+
   const result = await Swal.fire({
-    title: '¿Estás seguro?',
+    title: "¿Estás seguro?",
     text: "¿Quieres actualizar esta auditoría?",
-    icon: 'warning',
+    icon: "warning",
     showCancelButton: true,
-    confirmButtonColor: '#3085d6',
-    cancelButtonColor: '#d33',
-    confirmButtonText: 'Sí, actualizar!'
+    confirmButtonColor: "#3085d6",
+    cancelButtonColor: "#d33",
+    confirmButtonText: "Sí, actualizar!",
   });
 
   if (result.isConfirmed) {
-    const response = await fetch(`${ENDPOINTS.AUDITORIAS}/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(auditoria),
-    });
+    try {
+      const response = await fetch(`${ENDPOINTS.AUDITORIAS}/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(auditoria), // Asegúrate de que `estado` esté aquí
+      });
 
-    if (!response.ok) {
-      const errorData = await response.text(); // Lee la respuesta como texto
-      throw new Error(`Error al actualizar la auditoría: ${errorData}`);
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(`Error al actualizar la auditoría: ${errorData}`);
+      }
+
+      const updatedAuditoria = await response.json();
+      Swal.fire("Actualizado!", "La auditoría ha sido actualizada.", "success");
+      return updatedAuditoria;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      Swal.fire("Error", errorMessage, "error");
+      throw error; // Re-lanzar el error para que el componente padre lo maneje
     }
-
-    Swal.fire(
-      'Actualizado!',
-      'La auditoría ha sido actualizada.',
-      'success'
-    );
-
-    return response.json();
   } else {
-    throw new Error('Actualización cancelada');
+    throw new Error("Actualización cancelada");
   }
 };
 

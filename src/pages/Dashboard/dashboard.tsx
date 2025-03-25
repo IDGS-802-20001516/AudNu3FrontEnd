@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { Pie, Bar } from "react-chartjs-2";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement } from "chart.js";
-import { getPlanesAuditoria, getProcesos } from "../../services/PlanAuditoriaService";
+import { getPlanesAuditoria } from "../../services/PlanAuditoriaService";
+import { getProcesos } from "../../services/ProcesoService";
 import { getUsuarios } from "../../services/UsuarioService";
 import { getAuditorias } from "../../services/AuditoriaService";
 import { PlanAuditoria } from "../../services/PlanAuditoriaService";
@@ -35,7 +36,7 @@ const Dashboard: React.FC = () => {
         );
         setUsuarios(usuariosFiltrados);
         setAuditorias(auditorias);
-        setProcesos(procesos);
+        setProcesos(procesos.filter((proceso) => proceso.idProceso !== undefined) as { idProceso: number; nombreProceso: string }[]);
 
         const planesFiltrados = planes.filter((plan) =>
           usuariosFiltrados.some((usuario) => usuario.idUsuario === plan.idAuditor)

@@ -5,6 +5,7 @@ import { Empresa, getEmpresas } from "../../services/EmpresaService";
 import { getUsuarios, Usuario } from "../../services/UsuarioService";
 import AuditoriaForm from "./AuditoriasForm";
 import { useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
 
 const AuditoriaList: React.FC = () => {
   const [auditorias, setAuditorias] = useState<Auditoria[]>([]);
@@ -61,11 +62,28 @@ const AuditoriaList: React.FC = () => {
   };
 
   const handleDelete = async (id: number) => {
+    const confirmDelete = await Swal.fire({
+      title: "¿Estás seguro?",
+      text: "No podrás revertir esta acción.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+    });
+
+    if (!confirmDelete.isConfirmed) {
+      return;
+    }
+
     try {
       await deleteAuditoria(id);
       setAuditorias(auditorias.filter((auditoria) => auditoria.id_Auditoria !== id));
+      Swal.fire("Eliminado", "La auditoría ha sido eliminada con éxito.", "success");
     } catch (error) {
       console.error("Error al eliminar la auditoría:", error);
+      Swal.fire("Error", "Hubo un error al intentar eliminar la auditoría.", "error");
     }
   };
 
