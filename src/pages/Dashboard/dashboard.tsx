@@ -1,12 +1,14 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { Pie, Bar } from "react-chartjs-2";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement } from "chart.js";
-import { getPlanesAuditoria,  getProcesos } from "../../services/PlanAuditoriaService";
+import { getPlanesAuditoria, getProcesos } from "../../services/PlanAuditoriaService";
 import { getUsuarios } from "../../services/UsuarioService";
 import { getAuditorias } from "../../services/AuditoriaService";
 import { PlanAuditoria } from "../../services/PlanAuditoriaService";
 import { useNavigate } from 'react-router-dom';
 import '../../styles/cards.css';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // Registrar módulos de Chart.js
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement);
@@ -28,22 +30,15 @@ const Dashboard: React.FC = () => {
     setLoading(true);
     Promise.all([getPlanesAuditoria(), getUsuarios(), getAuditorias(), getProcesos()])
       .then(([planes, usuarios, auditorias, procesos]) => {
-        // Filtrar usuarios con roles 4 y 5
         const usuariosFiltrados = usuarios.filter(
-          (usuario: any) => usuario.idRol !== 4 && usuario.idRol !== 5
+          (usuario: any) => usuario.idRol === 2 || usuario.idRol === 3
         );
         setUsuarios(usuariosFiltrados);
         setAuditorias(auditorias);
         setProcesos(procesos);
 
-        // Filtrar actividades que no estén asignadas a usuarios con roles 4 y 5
-        const planesFiltrados = planes.filter(
-          (plan) =>
-            !usuarios.some(
-              (usuario: any) =>
-                (usuario.idRol === 4 || usuario.idRol === 5) &&
-                usuario.idUsuario === plan.idAuditor
-            )
+        const planesFiltrados = planes.filter((plan) =>
+          usuariosFiltrados.some((usuario) => usuario.idUsuario === plan.idAuditor)
         );
         setPlanAuditorias(planesFiltrados);
       })
@@ -51,7 +46,6 @@ const Dashboard: React.FC = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  // Obtener lista única de auditorías con sus nombres
   const auditoriasUnicas = useMemo(() => {
     return auditorias.map((auditoria) => ({
       id: auditoria.id_Auditoria,
@@ -59,21 +53,18 @@ const Dashboard: React.FC = () => {
     }));
   }, [auditorias]);
 
-  // Filtrar actividades por auditoría seleccionada
   const actividadesFiltradas = useMemo(() => {
     return selectedAuditoria
       ? planAuditorias.filter((plan) => plan.id_Auditoria === selectedAuditoria)
       : planAuditorias;
   }, [planAuditorias, selectedAuditoria]);
 
-  // Preprocesar datos en un solo paso para evitar múltiples `.filter()`
   const preprocessedData = useMemo(() => {
     const estados = { Pendiente: 0, "En Proceso": 0, Listo: 0 };
     const auditorCount: Record<number, number> = {};
 
     actividadesFiltradas.forEach(plan => {
       estados[plan.estado as keyof typeof estados]++;
-
       if (!auditorCount[plan.idAuditor]) {
         auditorCount[plan.idAuditor] = 0;
       }
@@ -83,9 +74,38 @@ const Dashboard: React.FC = () => {
     return { estados, auditorCount };
   }, [actividadesFiltradas]);
 
-  // Ordenar usuarios por actividades pendientes
+  useEffect(() => {
+    if (!loading && preprocessedData) {
+      const pendientes = preprocessedData.estados.Pendiente;
+      const auditoriaNombre = selectedAuditoria
+        ? auditoriasUnicas.find(a => a.id === selectedAuditoria)?.nombre || "desconocida"
+        : "todas las auditorías";
+      if (pendientes > 0) {
+        toast.info(`Existen ${pendientes} actividades pendientes en ${auditoriaNombre}`, {
+          position: "top-right",
+          autoClose: 2000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          toastId: "pendientes-toast",
+        });
+      } else {
+        toast.info(`No tienes actividades pendientes en ${auditoriaNombre}`, {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          toastId: "pendientes-toast",
+        });
+      }
+    }
+  }, [loading, preprocessedData, selectedAuditoria, auditoriasUnicas]);
+
   const usuariosOrdenados = useMemo(() => {
     return usuarios
+      .filter((usuario) => usuario.idRol === 2 || usuario.idRol === 3)
       .map((usuario) => {
         const actividadesAuditor = actividadesFiltradas.filter(
           (plan) => plan.idAuditor === usuario.idUsuario
@@ -95,24 +115,22 @@ const Dashboard: React.FC = () => {
         ).length;
         return { ...usuario, pendientes };
       })
-      .sort((a, b) => b.pendientes - a.pendientes); // Ordenar de mayor a menor
+      .sort((a, b) => b.pendientes - a.pendientes);
   }, [usuarios, actividadesFiltradas]);
 
-  // Datos del gráfico general
   const generalChartData = useMemo(() => ({
-    plugins: { legend: { display: false } }, // Ocultar los labels
+    plugins: { legend: { display: false } },
     responsive: true,
     labels: ["Pendiente", "En Proceso", "Listo"],
     datasets: [{
       label: "Actividades Totales",
       data: Object.values(preprocessedData.estados),
-      backgroundColor: ["#ff6961 ", "#FFC928", "#24CE6B"],
+      backgroundColor: ["#ff6961", "#FFC928", "#24CE6B"],
       borderColor: ["white", "white", "white"],
       borderWidth: 1,
     }],
   }), [preprocessedData]);
 
-  // Datos del gráfico de auditorías por usuario
   const auditorActivitiesChartData = useMemo(() => {
     const colors = [
       "rgba(255, 99, 132, 0.6)",
@@ -123,22 +141,25 @@ const Dashboard: React.FC = () => {
       "rgba(255, 159, 64, 0.6)",
     ];
 
+    // Filtrar usuarios con actividades mayores a 0
+    const usuariosConActividades = usuariosOrdenados.filter(
+      (usuario) => (preprocessedData.auditorCount[usuario.idUsuario] || 0) > 0
+    );
+
     return {
-      labels: usuariosOrdenados.map(() => ""), // Ocultar los labels
+      labels: usuariosConActividades.map((usuario) => usuario.nombre),
       datasets: [{
         label: "Actividades por Auditor",
-        data: usuariosOrdenados.map(usuario => preprocessedData.auditorCount[usuario.idUsuario] || 0),
-        backgroundColor: usuariosOrdenados.map((_, index) => colors[index % colors.length]),
-        borderColor: usuariosOrdenados.map((_, index) => colors[index % colors.length].replace("0.6", "1")),
+        data: usuariosConActividades.map(usuario => preprocessedData.auditorCount[usuario.idUsuario] || 0),
+        backgroundColor: usuariosConActividades.map((_, index) => colors[index % colors.length]),
+        borderColor: usuariosConActividades.map((_, index) => colors[index % colors.length].replace("0.6", "1")),
         borderWidth: 1,
       }],
     };
   }, [preprocessedData, usuariosOrdenados]);
 
-  // Generar gráfico individual por auditor
   const generateChartData = (idAuditor: number) => {
     const data = { Pendiente: 0, "En Proceso": 0, Listo: 0 };
-
     actividadesFiltradas.forEach(plan => {
       if (plan.idAuditor === idAuditor) {
         data[plan.estado as keyof typeof data]++;
@@ -150,23 +171,19 @@ const Dashboard: React.FC = () => {
       datasets: [{
         label: "Estado de Actividades",
         data: Object.values(data),
-        backgroundColor: ["#ff6961 ", "#FFC928", "#24CE6B"],
+        backgroundColor: ["#ff6961", "#FFC928", "#24CE6B"],
         borderColor: ["white", "white", "white"],
         borderWidth: 1,
       }],
     };
   };
 
-  // Contar actividades por estado por proceso
   const actividadesPorEstadoPorProceso = useMemo(() => {
     const estadoMap = new Map<string, Record<string, number>>();
-
-    // Inicializar todos los procesos con ceros para cada estado, usando nombres reales
     procesos.forEach((proc) => {
       estadoMap.set(proc.nombreProceso, { Pendiente: 0, Listo: 0, "En Proceso": 0 });
     });
 
-    // Contar planes por estado solo para los planes filtrados
     actividadesFiltradas.forEach((plan) => {
       const nombreProceso = procesos.find((p) => p.idProceso === plan.idProceso)?.nombreProceso || "Sin Proceso";
       if (!estadoMap.has(nombreProceso)) {
@@ -191,7 +208,6 @@ const Dashboard: React.FC = () => {
     }));
   }, [actividadesFiltradas, procesos]);
 
-  // Datos para el gráfico de actividades por estado por proceso
   const estadoBarChartData = useMemo(() => {
     const labels = actividadesPorEstadoPorProceso.map((p) => p.nombreProceso);
     const datasets = [
@@ -224,13 +240,14 @@ const Dashboard: React.FC = () => {
         Dashboard de Actividades
       </h2>
 
+      <ToastContainer />
+
       {loading ? (
         <div className="text-center mt-5">
           <p className="text-muted">Cargando datos...</p>
         </div>
       ) : (
         <>
-          {/* Dropdown para seleccionar auditoría */}
           <div className="row mb-4">
             <div className="col-md-6 offset-md-3">
               <div className="card shadow-sm border-0" style={{ background: "#f8f9fa" }}>
@@ -256,7 +273,6 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Métricas principales */}
           <div className="row mb-4">
             <div className="col-md-4">
               <div className="card text-white bg-danger mb-3 shadow-sm border-0">
@@ -284,7 +300,6 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Gráficos */}
           <div className="row mb-4">
             <div className="col-md-6">
               <div className="card shadow-sm border-0" style={{ background: "#f8f9fa" }}>
@@ -295,11 +310,14 @@ const Dashboard: React.FC = () => {
                   <Pie
                     data={generalChartData}
                     options={{
-                      plugins: { legend: { position: "bottom" } },
+                      plugins: {
+                        legend: { position: "bottom" },
+                        datalabels: { display: false }, // Deshabilitar números en la gráfica
+                      },
                       responsive: true,
                       maintainAspectRatio: false,
                     }}
-                    height={200} // Reducir el tamaño de la gráfica
+                    height={200}
                   />
                 </div>
               </div>
@@ -313,18 +331,24 @@ const Dashboard: React.FC = () => {
                   <Bar
                     data={auditorActivitiesChartData}
                     options={{
-                      scales: { y: { beginAtZero: true } },
+                      scales: {
+                        y: { beginAtZero: true, title: { display: true, text: "Cantidad", font: { size: 14 } } },
+                        x: { title: { display: true, text: "Auditores", font: { size: 14 } } },
+                      },
                       responsive: true,
                       maintainAspectRatio: false,
+                      plugins: {
+                        legend: { display: false, position: "top" },
+                        tooltip: { enabled: true },
+                      },
                     }}
-                    height={200} // Reducir el tamaño de la gráfica
+                    height={200}
                   />
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Gráfico de Actividades por Estado por Proceso */}
           <div className="row mb-4">
             <div className="col-12">
               <div className="card shadow-sm border-0" style={{ background: "#f8f9fa" }}>
@@ -358,7 +382,6 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Detalles por Auditor */}
           <div className="row">
             {usuariosOrdenados.map(usuario => {
               const actividadesAuditor = actividadesFiltradas.filter(plan => plan.idAuditor === usuario.idUsuario);
@@ -367,7 +390,7 @@ const Dashboard: React.FC = () => {
               return (
                 <div key={usuario.idUsuario} className="col-md-4 mb-4">
                   <div className="card shadow-sm border-0" style={{ background: "#f8f9fa" }}>
-                    <div className="card-header " style={{ backgroundColor: "#800020", color: "white" }}>
+                    <div className="card-header" style={{ backgroundColor: "#800020", color: "white" }}>
                       <img src={usuario.fotoPerfil} alt={usuario.nombreUsuario} className="rounded-circle me-2" style={{ width: "40px", height: "40px" }} />
                       <h5 className="card-title mb-0 fw-bold">{usuario.nombre}</h5>
                     </div>
@@ -376,11 +399,14 @@ const Dashboard: React.FC = () => {
                         <Pie
                           data={generateChartData(usuario.idUsuario)}
                           options={{
-                            plugins: { legend: { position: "bottom" } },
+                            plugins: {
+                              legend: { position: "bottom" },
+                              datalabels: { display: false }, // Deshabilitar números en la gráfica
+                            },
                             responsive: true,
                             maintainAspectRatio: false,
                           }}
-                          height={150} // Reducir el tamaño de la gráfica
+                          height={150}
                         />
                       ) : (
                         <p className="text-center text-muted">No hay actividades para este auditor.</p>

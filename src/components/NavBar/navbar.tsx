@@ -38,14 +38,14 @@ const Navbar: React.FC<NavbarProps> = ({ onLogout }) => {
   };
 
   const getNavbarStyle = () => {
-    if (userRole === 4 || userRole === 5) {
+    if (userRole === 4 || userRole === 5 || userRole === 6) {
       return { background: "linear-gradient(to right,rgb(230, 98, 131),rgb(139, 9, 9)" };
     }
     return { background: "linear-gradient(to right, #800020, #a10a28)" };
   };
 
   const renderNavLinks = () => {
-    if (userRole === 4 || userRole === 5) {
+    if (userRole === 4 || userRole === 5 || userRole === 6) {
       return (
         <>
           <Link

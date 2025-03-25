@@ -2,8 +2,9 @@ import React, { useState, useEffect } from "react";
 import { Modal, Form, Button, Row, Col, Card } from "react-bootstrap";
 import { getProcesos, PlanAuditoria } from "../../services/PlanAuditoriaService";
 import { savePlanAuditoria, getPlanAuditoriaById } from "../../services/PlanAuditoriaService";
-import { getAuditorias, getActividades, getUsuario } from "../../services/PlanAuditoriaService";
+import { getAuditorias, getActividades } from "../../services/PlanAuditoriaService";
 import { useNavigate } from "react-router-dom";
+import { getUsuarios } from "../../services/UsuarioService";
 
 interface PlanAuditoriaFormProps {
   idPlanAuditoria?: number;
@@ -98,7 +99,7 @@ const PlanAuditoriaForm: React.FC<PlanAuditoriaFormProps> = ({ idPlanAuditoria, 
 
   const fetchUsuarios = async () => {
     try {
-      const data = await getUsuario();
+      const data = await getUsuarios();
       setUsuarios(data);
     } catch (error) {
       console.error("Error al obtener los usuarios:", error);

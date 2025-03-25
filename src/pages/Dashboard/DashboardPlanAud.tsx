@@ -40,15 +40,32 @@ const PlanAuditoriaDashboard: React.FC = () => {
   const [showLabels, setShowLabels] = useState(false); // Estado para controlar la visibilidad de las etiquetas
   const navigate = useNavigate();
 
+  // Función para cargar todos los datos
+  const fetchAllData = async () => {
+    try {
+      setLoading(true);
+      await Promise.all([fetchPlanesAuditoria(), fetchProcesos(), fetchAuditorias()]);
+    } catch (error) {
+      console.error("Error al cargar los datos:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
       navigate("/login");
     }
-    fetchPlanesAuditoria();
-    fetchProcesos();
-    fetchAuditorias();
+    fetchAllData();
   }, [navigate]);
+
+  // Volver a cargar los datos cuando cambie la auditoría seleccionada
+  useEffect(() => {
+    if (selectedAuditoriaNombre) {
+      fetchAllData();
+    }
+  }, [selectedAuditoriaNombre]);
 
   const fetchPlanesAuditoria = async () => {
     try {
@@ -57,6 +74,7 @@ const PlanAuditoriaDashboard: React.FC = () => {
       setPlanesAuditoria(data);
     } catch (error) {
       console.error("Error al obtener los planes de auditoría:", error);
+      setPlanesAuditoria([]);
     }
   };
 
@@ -64,9 +82,18 @@ const PlanAuditoriaDashboard: React.FC = () => {
     try {
       const data = await getProcesos();
       console.log("Datos de procesos:", data);
-      setProcesos(data.filter((proceso) => proceso.idProceso !== undefined) as { idProceso: number; nombreProceso: string }[]);
+      const filteredProcesos = data.filter((proceso) => proceso.idProceso !== undefined) as { idProceso: number; nombreProceso: string }[];
+      setProcesos(filteredProcesos);
+      // Verificar si hay planes con idProceso que no coinciden con los procesos
+      const unmatchedPlans = planesAuditoria.filter(
+        (plan) => !filteredProcesos.some((proceso) => proceso.idProceso === plan.idProceso)
+      );
+      if (unmatchedPlans.length > 0) {
+        console.warn("Planes con idProceso no encontrado en procesos:", unmatchedPlans);
+      }
     } catch (error) {
       console.error("Error al obtener los procesos:", error);
+      setProcesos([]);
     }
   };
 
@@ -75,13 +102,12 @@ const PlanAuditoriaDashboard: React.FC = () => {
       const data = await getAuditorias();
       console.log("Datos de auditorías:", data);
       setAuditorias(data);
-      if (data.length > 0) {
+      if (data.length > 0 && !selectedAuditoriaNombre) {
         setSelectedAuditoriaNombre(data[0].nombreAuditoria);
       }
-      setLoading(false);
     } catch (error) {
       console.error("Error al obtener las auditorías:", error);
-      setLoading(false);
+      setAuditorias([]);
     }
   };
 
@@ -102,12 +128,15 @@ const PlanAuditoriaDashboard: React.FC = () => {
   const semaforosPorProceso = useMemo(() => {
     const procesoMap = new Map<string, Record<string, number>>();
 
+    // Inicializar el mapa con todos los procesos disponibles
     procesos.forEach((proc) => {
       procesoMap.set(proc.nombreProceso, { NCA: 0, NCM: 0, NCB: 0, OM: 0, C: 0 });
     });
 
+    // Contar los semáforos por proceso
     planesFiltrados.forEach((plan) => {
-      const nombreProceso = procesos.find((p) => p.idProceso === plan.idProceso)?.nombreProceso || "Sin Proceso";
+      const proceso = procesos.find((p) => p.idProceso === plan.idProceso);
+      const nombreProceso = proceso ? proceso.nombreProceso : `Proceso Desconocido (ID: ${plan.idProceso})`;
       if (!procesoMap.has(nombreProceso)) {
         procesoMap.set(nombreProceso, { NCA: 0, NCM: 0, NCB: 0, OM: 0, C: 0 });
       }
@@ -155,7 +184,8 @@ const PlanAuditoriaDashboard: React.FC = () => {
     });
 
     planesFiltrados.forEach((plan) => {
-      const nombreProceso = procesos.find((p) => p.idProceso === plan.idProceso)?.nombreProceso || "Sin Proceso";
+      const proceso = procesos.find((p) => p.idProceso === plan.idProceso);
+      const nombreProceso = proceso ? proceso.nombreProceso : `Proceso Desconocido (ID: ${plan.idProceso})`;
       if (!procesoMap.has(nombreProceso)) {
         procesoMap.set(nombreProceso, { probability: 0, impact: 0, count: 0, nombreProceso });
       }
@@ -396,11 +426,15 @@ const PlanAuditoriaDashboard: React.FC = () => {
                 value={selectedAuditoriaNombre}
                 onChange={(e) => setSelectedAuditoriaNombre(e.target.value)}
               >
-                {auditorias.map((auditoria) => (
-                  <option key={auditoria.id_Auditoria} value={auditoria.nombreAuditoria}>
-                    {auditoria.nombreAuditoria}
-                  </option>
-                ))}
+                {auditorias.length === 0 ? (
+                  <option value="">No hay auditorías disponibles</option>
+                ) : (
+                  auditorias.map((auditoria) => (
+                    <option key={auditoria.id_Auditoria} value={auditoria.nombreAuditoria}>
+                      {auditoria.nombreAuditoria}
+                    </option>
+                  ))
+                )}
               </select>
             </div>
           </div>
@@ -415,37 +449,41 @@ const PlanAuditoriaDashboard: React.FC = () => {
               <h5 className="card-title mb-0 fw-bold">Distribución de Semáforos por Proceso</h5>
             </div>
             <div className="card-body">
-              <Bar
-                data={semaforoBarChartData}
-                options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  plugins: {
-                    legend: { position: "top", labels: { font: { size: 14 } } },
-                    title: {
-                      display: false,
-                      text: "Cantidad de Semáforos por Proceso",
-                      font: { size: 18, weight: "bold" },
-                      color: "#333",
-                    },
-                    datalabels: {
-                      color: "#ffffff",
-                      anchor: "center",
-                      align: "center",
-                      font: {
-                        weight: "bold",
-                        size: 12,
+              {semaforoBarChartData.labels.length === 0 ? (
+                <div className="text-center">No hay datos disponibles para mostrar.</div>
+              ) : (
+                <Bar
+                  data={semaforoBarChartData}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: { position: "top", labels: { font: { size: 14 } } },
+                      title: {
+                        display: false,
+                        text: "Cantidad de Semáforos por Proceso",
+                        font: { size: 18, weight: "bold" },
+                        color: "#333",
                       },
-                      formatter: (value: number) => (value > 0 ? value : ""),
+                      datalabels: {
+                        color: "#ffffff",
+                        anchor: "center",
+                        align: "center",
+                        font: {
+                          weight: "bold",
+                          size: 12,
+                        },
+                        formatter: (value: number) => (value > 0 ? value : ""),
+                      },
                     },
-                  },
-                  scales: {
-                    x: { title: { display: true, text: "Procesos", font: { size: 14 } } },
-                    y: { title: { display: true, text: "Cantidad", font: { size: 14 } }, beginAtZero: true },
-                  },
-                }}
-                height={400}
-              />
+                    scales: {
+                      x: { title: { display: true, text: "Procesos", font: { size: 14 } } },
+                      y: { title: { display: true, text: "Cantidad", font: { size: 14 } }, beginAtZero: true },
+                    },
+                  }}
+                  height={400}
+                />
+              )}
             </div>
           </div>
         </div>
@@ -457,8 +495,9 @@ const PlanAuditoriaDashboard: React.FC = () => {
           <div className="card shadow-sm border-0" style={{ background: "#f8f9fa" }}>
             <div className="card-header d-flex justify-content-between align-items-center" style={{ backgroundColor: "#800020", color: "white" }}>
               <h5 className="card-title mb-0 fw-bold">Análisis de Riesgo por Proceso</h5>
-              <button style={{backgroundColor: "orange", color: "white"}}
-                className="btn btn-light btn-sm"
+              <button
+                style={{ backgroundColor: "orange", color: "white" }}
+                className="btn btn-sm"
                 onClick={() => setShowLabels(!showLabels)}
               >
                 {showLabels ? "Ocultar Etiquetas" : "Mostrar Etiquetas"}
@@ -467,16 +506,20 @@ const PlanAuditoriaDashboard: React.FC = () => {
             <div className="card-body">
               <div style={{ display: "flex", justifyContent: "center" }}>
                 <Suspense fallback={<div>Cargando gráfico...</div>}>
-                  <Plotly
-                    data={treemapData}
-                    layout={treemapLayout}
-                    style={{ width: "100%", maxWidth: "900px", height: "600px" }}
-                    config={{
-                      responsive: true,
-                      displayModeBar: false, // Ocultar la barra de herramientas (incluye el botón de captura)
-                      displaylogo: false, // Ocultar el logo de Plotly
-                    }}
-                  />
+                  {treemapData[0].labels.length === 0 ? (
+                    <div className="text-center">No hay datos disponibles para mostrar.</div>
+                  ) : (
+                    <Plotly
+                      data={treemapData}
+                      layout={treemapLayout}
+                      style={{ width: "100%", maxWidth: "900px", height: "600px" }}
+                      config={{
+                        responsive: true,
+                        displayModeBar: false, // Ocultar la barra de herramientas (incluye el botón de captura)
+                        displaylogo: false, // Ocultar el logo de Plotly
+                      }}
+                    />
+                  )}
                 </Suspense>
               </div>
             </div>

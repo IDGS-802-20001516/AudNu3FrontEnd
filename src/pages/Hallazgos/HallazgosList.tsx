@@ -4,7 +4,7 @@ import HallazgoForm from "./HallazgosForm";
 import { useNavigate } from "react-router-dom";
 import "./HallazgosList.css";
 import {  Empresa, getEmpresasAll } from "../../services/EmpresaService";
-import { FaEdit, FaTrash, FaEye, FaCheck, FaXbox, FaExclamation, FaBox, FaXing, FaEject, FaSign } from "react-icons/fa";
+import { FaEdit, FaTrash, FaEye, FaCheck,  FaExclamation } from "react-icons/fa";
 
 // Componente para mostrar el texto completo en un modal
 const ModalInformacionCompleta: React.FC<{
@@ -321,7 +321,9 @@ const HallazgoList: React.FC = () => {
               <th>Responsable</th>
               <th>Fecha de Compromiso</th>
               <th>Cumplido</th>
-              <th>Acciones</th>
+                <th>
+                {userRole === 5 || userRole === 6 ? "" : "Acciones"}
+                </th>
             </tr>
           </thead>
           <tbody>
@@ -366,35 +368,35 @@ const HallazgoList: React.FC = () => {
                     )}
                   </td>
                 <td>
-                  <div className="d-flex gap-2">
-                    {userRole !== 5 && (
+                    <div className="d-flex gap-2">
+                    {userRole !== 5 && userRole !== 6 && (
                       <>
-                        {userRole === 4 ? (
-                          <button
-                            onClick={() => handleOpenModal(h.iD_Hallazgo)}
-                            className="btn btn-outline-primary btn-sm"
-                          >
-                            Editar Seguimiento
-                          </button>
-                        ) : (
-                          <>
-                            <button
-                              onClick={() => handleOpenModal(h.iD_Hallazgo)}
-                              className="btn btn-outline-primary btn-sm"
-                            >
-                              <FaEdit className="me-1" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(h.iD_Hallazgo)}
-                              className="btn btn-outline-danger btn-sm"
-                            >
-                              <FaTrash className="me-1" />
-                            </button>
-                          </>
-                        )}
+                      {userRole === 4 ? (
+                        <button
+                        onClick={() => handleOpenModal(h.iD_Hallazgo)}
+                        className="btn btn-outline-primary btn-sm"
+                        >
+                        Editar Seguimiento
+                        </button>
+                      ) : (
+                        <>
+                        <button
+                          onClick={() => handleOpenModal(h.iD_Hallazgo)}
+                          className="btn btn-outline-primary btn-sm"
+                        >
+                          <FaEdit className="me-1" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(h.iD_Hallazgo)}
+                          className="btn btn-outline-danger btn-sm"
+                        >
+                          <FaTrash className="me-1" />
+                        </button>
+                        </>
+                      )}
                       </>
                     )}
-                  </div>
+                    </div>
                 </td>
               </tr>
             ))}

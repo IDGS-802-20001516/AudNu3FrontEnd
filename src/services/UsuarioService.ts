@@ -144,10 +144,16 @@ export const updateUsuario = async (id: number, usuario: Usuario, fotoPerfil?: F
   try {
     const formData = new FormData();
     const usuarioToUpdate = { ...usuario, estatus: usuario.estatus !== undefined ? usuario.estatus : true };
-    Object.keys(usuarioToUpdate).forEach(key => {
-      formData.append(key, usuarioToUpdate[key as keyof Usuario] as string);
+
+    // Excluir fotoPerfil del objeto usuarioToUpdate para evitar enviarlo si no se actualiza
+    const { fotoPerfil: _, ...usuarioWithoutFotoPerfil } = usuarioToUpdate;
+
+    // Agregar los campos al FormData, excluyendo fotoPerfil
+    Object.keys(usuarioWithoutFotoPerfil).forEach(key => {
+      formData.append(key, usuarioWithoutFotoPerfil[key as keyof Omit<Usuario, 'fotoPerfil'>] as string);
     });
 
+    // Solo agregar fotoPerfil si se proporciona un nuevo archivo
     if (fotoPerfil) {
       const base64Image = await convertFileToBase64(fotoPerfil);
       formData.append("fotoPerfil", base64Image);
@@ -162,8 +168,15 @@ export const updateUsuario = async (id: number, usuario: Usuario, fotoPerfil?: F
     });
 
     if (!response.ok) {
-      const errorResponse = await response.json();
-      throw new Error(errorResponse.message || 'Error al actualizar el usuario');
+      const errorResponse = await response.text(); // Usar text() para manejar respuestas no JSON
+      let errorMessage = 'Error al actualizar el usuario';
+      try {
+        const parsedError = JSON.parse(errorResponse);
+        errorMessage = parsedError.message || errorMessage;
+      } catch (e) {
+        errorMessage = errorResponse || errorMessage;
+      }
+      throw new Error(errorMessage);
     }
 
     const updatedUsuario = await response.json();

@@ -11,10 +11,11 @@ import {
   Legend,
   ArcElement,
 } from "chart.js";
+import ChartDataLabels from "chartjs-plugin-datalabels"; // Importar el plugin
 import "../../styles/cards.css";
 import { useNavigate } from "react-router-dom";
 
-// Registrar componentes de Chart.js
+// Registrar componentes de Chart.js y el plugin de datalabels
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -22,7 +23,8 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  ArcElement
+  ArcElement,
+  ChartDataLabels
 );
 
 const HallazgoDashboard: React.FC = () => {
@@ -49,7 +51,6 @@ const HallazgoDashboard: React.FC = () => {
       console.log("Datos de hallazgos:", data);
       setHallazgos(data);
 
-      // Obtener lista única de auditorías
       const auditoriasUnicas = Array.from(new Set(data.map((h) => h.nombre_Auditoria)));
       setAuditorias(auditoriasUnicas);
       if (auditoriasUnicas.length > 0) {
@@ -62,14 +63,12 @@ const HallazgoDashboard: React.FC = () => {
     }
   };
 
-  // Filtrar hallazgos por auditoría seleccionada
   const hallazgosFiltrados = useMemo(() => {
     return selectedAuditoria
       ? hallazgos.filter((h) => h.nombre_Auditoria === selectedAuditoria)
       : hallazgos;
   }, [hallazgos, selectedAuditoria]);
 
-  // Calcular métricas
   const totalImpacto = useMemo(() => {
     return hallazgosFiltrados.reduce((sum, h) => sum + (h.montoImpacto || 0), 0);
   }, [hallazgosFiltrados]);
@@ -82,7 +81,6 @@ const HallazgoDashboard: React.FC = () => {
     return hallazgosFiltrados.filter((h) => !h.cumplido).length;
   }, [hallazgosFiltrados]);
 
-  // Calcular hallazgos por semáforo (solo NCA, NCM, NCB)
   const hallazgosPorSemaforo = useMemo(() => {
     const semaforos = ["NCA", "NCM", "NCB"];
     const semaforoMap: Record<string, number> = {};
@@ -96,7 +94,6 @@ const HallazgoDashboard: React.FC = () => {
     return semaforoMap;
   }, [hallazgosFiltrados]);
 
-  // Calcular monto de impacto por tipo de semáforo (incluye todos los semáforos)
   const impactoPorSemaforo = useMemo(() => {
     const semaforos = ["NCA", "NCM", "NCB"];
     const impactoMap: Record<string, number> = {};
@@ -110,7 +107,6 @@ const HallazgoDashboard: React.FC = () => {
     return impactoMap;
   }, [hallazgosFiltrados]);
 
-  // Calcular monto de impacto por auditoría
   const impactoPorAuditoria = useMemo(() => {
     const auditoriaMap = new Map<string, number>();
 
@@ -126,7 +122,6 @@ const HallazgoDashboard: React.FC = () => {
       .map(([nombre_Auditoria, impacto]) => ({ nombre_Auditoria, impacto }));
   }, [hallazgos, auditorias, selectedAuditoria]);
 
-  // Calcular hallazgos pendientes por semáforo (solo NCA, NCM, NCB)
   const pendientesPorSemaforo = useMemo(() => {
     const semaforos = ["NCA", "NCM", "NCB"];
     const pendienteMap: Record<string, number> = {};
@@ -151,11 +146,7 @@ const HallazgoDashboard: React.FC = () => {
           hallazgosPorSemaforo["NCM"] || 0,
           hallazgosPorSemaforo["NCB"] || 0,
         ],
-        backgroundColor: [
-          "#000000", // Negro
-          "#dc3545", // Rojo
-          "#ffc107", // Amarillo
-        ],
+        backgroundColor: ["#000000", "#dc3545", "#ffc107"], // Negro, rojo, amarillo
       },
     ],
   };
@@ -171,7 +162,6 @@ const HallazgoDashboard: React.FC = () => {
     ],
   };
 
-  // Datos para el gráfico de pastel de monto de impacto por semáforo (2D)
   const impactoSemaforoPieData = {
     labels: ["NCA", "NCM", "NCB"],
     datasets: [
@@ -181,20 +171,14 @@ const HallazgoDashboard: React.FC = () => {
           impactoPorSemaforo["NCA"] || 0,
           impactoPorSemaforo["NCM"] || 0,
           impactoPorSemaforo["NCB"] || 0,
-      
         ],
-        backgroundColor: [
-          "#000000", // Negro
-          "#dc3545", // Rojo
-          "#ffc107", // Amarillo
-        ],
+        backgroundColor: ["#000000", "#dc3545", "#ffc107"],
         borderWidth: 1,
         borderColor: "#fff",
       },
     ],
   };
 
-  // Datos para el gráfico de monto de impacto por auditoría
   const impactoAuditoriaChartData = useMemo(() => {
     const labels = impactoPorAuditoria.map((a) => a.nombre_Auditoria);
     const data = impactoPorAuditoria.map((a) => a.impacto);
@@ -210,8 +194,6 @@ const HallazgoDashboard: React.FC = () => {
     };
   }, [impactoPorAuditoria]);
 
-  
-  // Generar análisis ejecutivo
   const generarAnalisis = () => {
     const totalHallazgos = hallazgosFiltrados.length;
     const totalPendientesCriticos = (pendientesPorSemaforo["NCA"] || 0) + (pendientesPorSemaforo["NCM"] || 0);
@@ -234,7 +216,6 @@ const HallazgoDashboard: React.FC = () => {
         Dashboard de Hallazgos
       </h2>
 
-      {/* Dropdown para seleccionar auditoría */}
       <div className="row mb-4">
         <div className="col-md-6 offset-md-3">
           <div className="card shadow-sm border-0" style={{ background: "#f8f9fa" }}>
@@ -260,7 +241,6 @@ const HallazgoDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Métricas principales */}
       <div className="row mb-4">
         <div className="col-md-4">
           <div className="card text-white bg-primary mb-3 shadow-sm border-0">
@@ -288,7 +268,6 @@ const HallazgoDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Gráficos existentes */}
       <div className="row mb-4">
         <div className="col-md-6">
           <div className="card shadow-sm border-0" style={{ background: "#f8f9fa" }}>
@@ -302,11 +281,11 @@ const HallazgoDashboard: React.FC = () => {
                   responsive: true,
                   plugins: {
                     legend: { position: "top", labels: { font: { size: 14 } } },
-                    title: {
-                      display: true,
-                      text: "Cantidad de Hallazgos por Semáforo",
-                      font: { size: 18, weight: "bold" },
-                      color: "#333",
+                    datalabels: {
+                      anchor: "center", // Centrar dentro de la barra
+                      align: "center", // Centrar dentro de la barra
+                      color: "white", // Letras blancas
+                      font: { size: 14, weight: "bold" },
                     },
                   },
                   scales: {
@@ -329,11 +308,10 @@ const HallazgoDashboard: React.FC = () => {
                   responsive: true,
                   plugins: {
                     legend: { position: "top", labels: { font: { size: 14 } } },
-                    title: {
-                      display: true,
-                      text: "Estado de Hallazgos",
-                      font: { size: 18, weight: "bold" },
-                      color: "#333",
+                    datalabels: {
+                      color: "white", // Letras blancas
+                      font: { size: 14, weight: "bold" },
+                      formatter: (value) => value || "", // Mostrar solo si hay valor
                     },
                   },
                 }}
@@ -343,7 +321,6 @@ const HallazgoDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Gráfico y tabla: Monto de Impacto por Semáforo */}
       <div className="row mb-4">
         <div className="col-12">
           <div className="card shadow-sm border-0" style={{ background: "#f8f9fa" }}>
@@ -351,71 +328,59 @@ const HallazgoDashboard: React.FC = () => {
               <h5 className="card-title mb-0 fw-bold">Monto de Impacto por Semáforo</h5>
             </div>
             <div className="card-body">
-                <div className="row align-items-center">
-                {/* Gráfico de pastel */}
+              <div className="row align-items-center">
                 <div className="col-md-6">
                   <Pie
-                  data={impactoSemaforoPieData}
-                  options={{
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                    legend: {
-                      position: "top",
-                      labels: { font: { size: 14 }, boxWidth: 20 },
-                    },
-                    title: {
-                      display: true,
-                      text: "Distribución del Monto de Impacto",
-                      font: { size: 18, weight: "bold" },
-                      color: "#333",
-                    },
-                    tooltip: {
-                      callbacks: {
-                      label: (tooltipItem) => {
-                        const value = tooltipItem.raw as number;
-                        return `${tooltipItem.label}: $${value.toLocaleString()}`;
+                    data={impactoSemaforoPieData}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: { position: "top", labels: { font: { size: 14 }, boxWidth: 20 } },
+                        tooltip: {
+                          callbacks: {
+                            label: (tooltipItem) => {
+                              const value = tooltipItem.raw as number;
+                              return `${tooltipItem.label}: $${value.toLocaleString()}`;
+                            },
+                          },
+                        },
+                        datalabels: {
+                          display: false, // Deshabilitar etiquetas en el gráfico de pastel
+                        },
                       },
-                      },
-                    },
-                    datalabels: {
-                      display: false, // Deshabilitar etiquetas de datos
-                    },
-                    },
-                  }}
-                  height={300} // Reducimos la altura para dejar espacio a la tabla
+                    }}
+                    height={300}
                   />
                 </div>
-                {/* Tabla con los datos */}
                 <div className="col-md-6">
                   <table className="table table-bordered table-sm">
-                  <thead>
-                    <tr style={{ backgroundColor: "#800020", color: "white" }}>
-                    <th>Semáforo</th>
-                    <th>Monto de Impacto</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {Object.entries(impactoPorSemaforo).map(([semaforo, monto]) => (
-                    <tr key={semaforo}>
-                      <td>{semaforo}</td>
-                      <td>${monto.toLocaleString()}</td>
-                    </tr>
-                    ))}
-                    <tr style={{ fontWeight: "bold", backgroundColor: "#e9ecef" }}>
-                    <td>Total</td>
-                    <td>${totalImpacto.toLocaleString()}</td>
-                    </tr>
-                  </tbody>
+                    <thead>
+                      <tr style={{ backgroundColor: "#800020", color: "white" }}>
+                        <th>Semáforo</th>
+                        <th>Monto de Impacto</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Object.entries(impactoPorSemaforo).map(([semaforo, monto]) => (
+                        <tr key={semaforo}>
+                          <td>{semaforo}</td>
+                          <td>${monto.toLocaleString()}</td>
+                        </tr>
+                      ))}
+                      <tr style={{ fontWeight: "bold", backgroundColor: "#e9ecef" }}>
+                        <td>Total</td>
+                        <td>${totalImpacto.toLocaleString()}</td>
+                      </tr>
+                    </tbody>
                   </table>
                 </div>
-                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Gráfico: Monto de Impacto por Auditoría */}
       <div className="row mb-4">
         <div className="col-12">
           <div className="card shadow-sm border-0" style={{ background: "#f8f9fa" }}>
@@ -430,11 +395,12 @@ const HallazgoDashboard: React.FC = () => {
                   maintainAspectRatio: false,
                   plugins: {
                     legend: { position: "top", labels: { font: { size: 14 } } },
-                    title: {
-                      display: true,
-                      text: "Monto de Impacto por Auditoría",
-                      font: { size: 18, weight: "bold" },
-                      color: "#333",
+                    datalabels: {
+                      anchor: "center", // Centrar dentro de la barra
+                      align: "center", // Centrar dentro de la barra
+                      color: "white", // Letras blancas
+                      font: { size: 14, weight: "bold" },
+                      formatter: (value) => `$${value.toLocaleString()}`, // Formato con $
                     },
                   },
                   scales: {
@@ -449,8 +415,6 @@ const HallazgoDashboard: React.FC = () => {
         </div>
       </div>
 
-
-      {/* Análisis Ejecutivo */}
       <div className="row mb-4">
         <div className="col-12">
           <div className="card shadow-sm border-0" style={{ background: "#f8f9fa" }}>
