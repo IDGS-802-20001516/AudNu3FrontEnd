@@ -1,6 +1,23 @@
 import { ENDPOINTS } from "../config/endpoints";
 import Swal from 'sweetalert2';
 
+export interface Hallazgo {
+  idHallazgo: number;
+  idPlanAuditoria: number;
+  idActividad: number;
+  idResponsable: number;
+  montoImpacto: number;
+  semaforo: string;
+  descripcion: string;
+  riesgo: string;
+  recomendaciones: string;
+  planAccion: string;
+  seguimiento: string;
+  fechaCompromiso: string | null;
+  cumplido: boolean;
+  archivosSeguimiento: { idArchivo: number; rutaArchivo: string; nombreArchivo: string; tipoArchivo: string }[];
+}
+
 export interface VistaHallazgo {
   iD_Hallazgo: number;
   iD_Auditoria: number;
@@ -11,32 +28,37 @@ export interface VistaHallazgo {
   semaforo: string;
   descripcion: string;
   riesgo: string;
+  seguimiento: string;
   recomendaciones: string;
   planAccion: string;
   nombre_Responsable: string;
   fechaCompromiso: string;
   cumplido: boolean;
-  seguimiento : string;
-  idUsuario : number;
+  idUsuario: number;
   idRol: number;
   idEmpresa: number;
 }
 
-export interface Hallazgo{
-  idHallazgo: number;
-  idPlanAuditoria: number,
-  idActividad: number,
-  idResponsable: number,
-  montoImpacto: number,
-  semaforo:string,
-  descripcion: string,
-  riesgo: string,
-  recomendaciones: string,
-  planAccion: string,
-  fechaCompromiso:  string | null;
-  cumplido: boolean,
-  seguimiento: string
-}
+export const uploadArchivoSeguimiento = async (idHallazgo: number, file: File): Promise<void> => {
+  try {
+    const formData = new FormData();
+    formData.append("archivo", file);
+
+    const response = await fetch(`${ENDPOINTS.HALLAZGOS}/${idHallazgo}/archivos`, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error("Error al subir el archivo");
+    }
+
+    Swal.fire("Éxito", "Archivo subido correctamente", "success");
+  } catch (error) {
+    Swal.fire("Error", (error as Error).message, "error");
+    throw error;
+  }
+};
 
 export const getHallazgos = async (): Promise<VistaHallazgo[]> => {
   try {
@@ -61,6 +83,18 @@ export const getHallazgoById = async (id: number): Promise<Hallazgo> => {
   } catch (error) {
     Swal.fire('Error', (error as Error).message, 'error');
     throw error;
+  }
+};
+
+export const deleteArchivoSeguimiento = async (idHallazgo: number, idArchivo: number): Promise<void> => {
+  const response = await fetch(`${ENDPOINTS.HALLAZGOS}/${idHallazgo}/archivos/${idArchivo}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('token')}`,
+    },
+  });
+  if (!response.ok) {
+    throw new Error('Error al eliminar el archivo');
   }
 };
 
@@ -124,7 +158,20 @@ export const getAuditorias = async ()=> {
   }
 }
 
-export const updateHallazgo = async (id: number, hallazgo: Hallazgo): Promise<VistaHallazgo> => {
+export const getArchivosSeguimiento = async (idHallazgo: number): Promise<{ idArchivo: number; rutaArchivo: string; nombreArchivo: string; tipoArchivo: string }[]> => {
+  try {
+    const response = await fetch(`${ENDPOINTS.HALLAZGOS}/${idHallazgo}/archivos`);
+    if (!response.ok) {
+      throw new Error('Error al obtener los archivos de seguimiento');
+    }
+    return response.json();
+  } catch (error) {
+    Swal.fire('Error', (error as Error).message, 'error');
+    throw error;
+  }
+};
+
+export const updateHallazgo = async (id: number, hallazgo: Hallazgo): Promise<Hallazgo> => {
   try {
     console.log('Updating Hallazgo with ID:', id);
     console.log('Hallazgo data:', hallazgo);

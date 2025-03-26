@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { Button, Collapse } from "react-bootstrap";
-import { getHallazgos, deleteHallazgo, VistaHallazgo, getAuditorias } from "../../services/HallazgosService";
+import { Button, Collapse, Modal } from "react-bootstrap";
+import { getHallazgos, deleteHallazgo, VistaHallazgo, getAuditorias, getArchivosSeguimiento, deleteArchivoSeguimiento } from "../../services/HallazgosService";
 import HallazgoForm from "./HallazgosForm";
 import { useNavigate } from "react-router-dom";
 import "./HallazgosList.css";
 import { Empresa, getEmpresasAll } from "../../services/EmpresaService";
-import { FaEdit, FaTrash, FaEye, FaCheck, FaExclamation, FaChevronDown, FaChevronUp } from "react-icons/fa";
+import { FaEdit, FaTrash, FaEye, FaCheck, FaExclamation, FaChevronDown, FaChevronUp, FaFileAlt } from "react-icons/fa";
 import Swal from 'sweetalert2';
+import { ENDPOINTS } from "../../config/endpoints";
 
-// Componente para mostrar el texto completo en un modal
+// ModalInformacionCompleta remains unchanged
 const ModalInformacionCompleta: React.FC<{
   descripcion: string;
   riesgo: string;
@@ -16,7 +17,6 @@ const ModalInformacionCompleta: React.FC<{
   titulo: string;
 }> = ({ descripcion, riesgo, recomendaciones, titulo }) => {
   const [show, setShow] = useState(false);
-
   const handleClose = () => setShow(false);
   const handleShow = () => setShow(true);
 
@@ -25,66 +25,31 @@ const ModalInformacionCompleta: React.FC<{
       <button onClick={handleShow} className="btn btn-link p-0 text-primary fw-bold">
         <FaEye className="me-1" />
       </button>
-
       {show && (
         <div className="hallazgos-modal-container">
-          <div
-            className="modal fade show d-block"
-            tabIndex={-1}
-            role="dialog"
-            style={{ backgroundColor: "rgba(0, 0, 0, 0.6)" }}
-          >
+          <div className="modal fade show d-block" tabIndex={-1} role="dialog" style={{ backgroundColor: "rgba(0, 0, 0, 0.6)" }}>
             <div className="modal-dialog modal-xl modal-dialog-centered" role="document">
               <div className="modal-content shadow-lg border-0 rounded-3">
                 <div className="modal-header bg-gradient-primary text-white border-0 rounded-top-3">
                   <h4 className="modal-title font-weight-bold">{titulo}</h4>
-                  <button
-                    type="button"
-                    className="btn-close btn-close-white"
-                    onClick={handleClose}
-                    aria-label="Close"
-                  ></button>
+                  <button type="button" className="btn-close btn-close-white" onClick={handleClose}></button>
                 </div>
                 <div className="modal-body p-4">
                   <div className="card mb-4 border-0 shadow-sm">
-                    <div className="card-header bg-primary text-white rounded-top">
-                      <h5 className="mb-0">Descripción</h5>
-                    </div>
-                    <div className="card-body p-3 bg-light">
-                      <p className="text-muted lead" style={{ whiteSpace: "pre-wrap" }}>
-                        {descripcion}
-                      </p>
-                    </div>
+                    <div className="card-header bg-primary text-white rounded-top"><h5 className="mb-0">Descripción</h5></div>
+                    <div className="card-body p-3 bg-light"><p className="text-muted lead" style={{ whiteSpace: "pre-wrap" }}>{descripcion}</p></div>
                   </div>
                   <div className="card mb-4 border-0 shadow-sm">
-                    <div className="card-header bg-danger text-white rounded-top">
-                      <h5 className="mb-0">Riesgo</h5>
-                    </div>
-                    <div className="card-body p-3 bg-light">
-                      <p className="text-warning lead" style={{ whiteSpace: "pre-wrap" }}>
-                        {riesgo}
-                      </p>
-                    </div>
+                    <div className="card-header bg-danger text-white rounded-top"><h5 className="mb-0">Riesgo</h5></div>
+                    <div className="card-body p-3 bg-light"><p className="text-warning lead" style={{ whiteSpace: "pre-wrap" }}>{riesgo}</p></div>
                   </div>
                   <div className="card mb-0 border-0 shadow-sm">
-                    <div className="card-header bg-success text-white rounded-top">
-                      <h5 className="mb-0">Recomendaciones</h5>
-                    </div>
-                    <div className="card-body p-3 bg-light">
-                      <p className="text-success lead" style={{ whiteSpace: "pre-wrap" }}>
-                        {recomendaciones}
-                      </p>
-                    </div>
+                    <div className="card-header bg-success text-white rounded-top"><h5 className="mb-0">Recomendaciones</h5></div>
+                    <div className="card-body p-3 bg-light"><p className="text-success lead" style={{ whiteSpace: "pre-wrap" }}>{recomendaciones}</p></div>
                   </div>
                 </div>
                 <div className="modal-footer bg-light border-0 rounded-bottom-3">
-                  <button
-                    type="button"
-                    className="btn btn-outline-secondary btn-lg"
-                    onClick={handleClose}
-                  >
-                    Cerrar
-                  </button>
+                  <button type="button" className="btn btn-outline-secondary btn-lg" onClick={handleClose}>Cerrar</button>
                 </div>
               </div>
             </div>
@@ -95,14 +60,13 @@ const ModalInformacionCompleta: React.FC<{
   );
 };
 
-// Componente para mostrar seguimiento y plan de acción en un modal
+// ModalSeguimiento remains unchanged
 const ModalSeguimiento: React.FC<{
-  seguimiento: string;
   planAccion: string;
+  seguimiento: string;
   titulo: string;
-}> = ({ seguimiento, planAccion, titulo }) => {
+}> = ({ planAccion, seguimiento, titulo }) => {
   const [show, setShow] = useState(false);
-
   const handleClose = () => setShow(false);
   const handleShow = () => setShow(true);
 
@@ -111,66 +75,175 @@ const ModalSeguimiento: React.FC<{
       <button onClick={handleShow} className="btn btn-link p-0 text-success fw-bold">
         <FaEye className="me-1" />
       </button>
-
       {show && (
         <div className="hallazgos-modal-container">
-          <div
-            className="modal-backdrop fade show"
-            style={{ backgroundColor: "rgba(0, 0, 0, 0.6)" }}
-          ></div>
-
-          <div
-            className="modal fade show d-block"
-            tabIndex={-1}
-            role="dialog"
-            style={{ zIndex: 1050 }}
-          >
+          <div className="modal-backdrop fade show" style={{ backgroundColor: "rgba(0, 0, 0, 0.6)" }}></div>
+          <div className="modal fade show d-block" tabIndex={-1} role="dialog" style={{ zIndex: 1050 }}>
             <div className="modal-dialog modal-xl modal-dialog-centered" role="document">
               <div className="modal-content shadow-lg border-0 rounded-3">
                 <div className="modal-header bg-gradient-success text-white border-0 rounded-top-3">
                   <h4 className="modal-title font-weight-bold">{titulo}</h4>
-                  <button
-                    type="button"
-                    className="btn-close btn-close-white"
-                    onClick={handleClose}
-                    aria-label="Close"
-                  ></button>
+                  <button type="button" className="btn-close btn-close-white" onClick={handleClose}></button>
                 </div>
                 <div className="modal-body p-4">
                   <div className="card mb-4 border-0 shadow-sm">
-                    <div className="card-header bg-primary text-white rounded-top">
-                      <h5 className="mb-0">Plan de Acción</h5>
- maje                    </div>
+                    <div className="card-header bg-primary text-white rounded-top"><h5 className="mb-0">Plan de Acción</h5></div>
                     <div className="card-body p-3 bg-light">
-                      <p className="text-muted lead" style={{ whiteSpace: "pre-wrap" }}>
-                        {planAccion}
-                      </p>
+                      <p className="text-muted lead" style={{ whiteSpace: "pre-wrap" }}>{planAccion || "No hay plan de acción"}</p>
                     </div>
                   </div>
                   <div className="card mb-0 border-0 shadow-sm">
-                    <div className="card-header bg-success text-white rounded-top">
-                      <h5 className="mb-0">Seguimiento</h5>
-                    </div>
+                    <div className="card-header bg-success text-white rounded-top"><h5 className="mb-0">Seguimiento</h5></div>
                     <div className="card-body p-3 bg-light">
-                      <p className="text-success lead" style={{ whiteSpace: "pre-wrap" }}>
-                        {seguimiento || "No hay seguimiento"}
-                      </p>
+                      <p className="text-success lead" style={{ whiteSpace: "pre-wrap" }}>{seguimiento || "No hay seguimiento"}</p>
                     </div>
                   </div>
                 </div>
                 <div className="modal-footer bg-light border-0 rounded-bottom-3">
-                  <button
-                    type="button"
-                    className="btn btn-outline-success btn-lg"
-                    onClick={handleClose}
-                  >
-                    Cerrar
-                  </button>
+                  <button type="button" className="btn btn-outline-success btn-lg" onClick={handleClose}>Cerrar</button>
                 </div>
               </div>
             </div>
           </div>
         </div>
+      )}
+    </>
+  );
+};
+
+// Updated SeguimientoArchivosModal with delete and preview functionality
+const SeguimientoArchivosModal: React.FC<{
+  idHallazgo: number;
+  show: boolean;
+  handleClose: () => void;
+}> = ({ idHallazgo, show, handleClose }) => {
+  const [archivos, setArchivos] = useState<{ idArchivo: number; rutaArchivo: string; nombreArchivo: string; tipoArchivo: string }[]>([]);
+  const [previewFile, setPreviewFile] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (show) {
+      const fetchArchivos = async () => {
+        try {
+          const data = await getArchivosSeguimiento(idHallazgo);
+          setArchivos(data);
+        } catch (error) {
+          console.error("Error al obtener archivos:", error);
+          Swal.fire("Error", "No se pudieron cargar los archivos de seguimiento", "error");
+        }
+      };
+      fetchArchivos();
+    }
+  }, [show, idHallazgo]);
+
+  const handleDeleteArchivo = async (idArchivo: number) => {
+    const result = await Swal.fire({
+      title: "¿Estás seguro?",
+      text: "No podrás revertir esta acción",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#800020",
+      cancelButtonColor: "#6c757d",
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await deleteArchivoSeguimiento(idHallazgo, idArchivo);
+        setArchivos(archivos.filter(archivo => archivo.idArchivo !== idArchivo));
+        Swal.fire("Éxito", "El archivo se ha eliminado correctamente", "success");
+      } catch (error) {
+        console.error("Error al eliminar el archivo:", error);
+        Swal.fire("Error", "No se pudo eliminar el archivo", "error");
+      }
+    }
+  };
+
+  const handlePreview = (idArchivo: number, tipoArchivo: string) => {
+    if (tipoArchivo.startsWith('image/') || tipoArchivo === 'application/pdf') {
+      setPreviewFile(`${ENDPOINTS.HALLAZGOS}/${idHallazgo}/archivos/${idArchivo}/descargar`);
+    } else {
+      Swal.fire("Info", "La vista previa no está disponible para este tipo de archivo", "info");
+    }
+  };
+
+  const handleClosePreview = () => setPreviewFile(null);
+
+  return (
+    <>
+      <Modal show={show} onHide={handleClose} size="lg" centered>
+        <Modal.Header closeButton style={{ backgroundColor: "#28a745", color: "white" }}>
+          <Modal.Title>Archivos de Seguimiento</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {archivos.length > 0 ? (
+            <ul className="list-group">
+              {archivos.map((archivo) => (
+                <li key={archivo.idArchivo} className="list-group-item d-flex justify-content-between align-items-center">
+                  <span>{archivo.nombreArchivo}</span>
+                  <div>
+                    <Button
+                      variant="outline-primary"
+                      size="sm"
+                      className="me-2"
+                      onClick={() => handlePreview(archivo.idArchivo, archivo.tipoArchivo)}
+                    >
+                      <FaEye className="me-1" /> Vista Previa
+                    </Button>
+                    <Button
+                      variant="outline-danger"
+                      size="sm"
+                      onClick={() => handleDeleteArchivo(archivo.idArchivo)}
+                    >
+                      <FaTrash className="me-1" /> Eliminar
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p>No hay archivos de seguimiento subidos.</p>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="outline-secondary" onClick={handleClose}>Cerrar</Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Preview Modal */}
+      {previewFile && (
+        <Modal show={!!previewFile} onHide={handleClosePreview} size="xl" centered>
+          <Modal.Header closeButton>
+            <Modal.Title>Vista Previa</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            {previewFile.endsWith('.pdf') ? (
+              <iframe
+                src={previewFile}
+                style={{ width: '100%', height: '500px' }}
+                title="PDF Preview"
+              />
+            ) : (
+              <img
+                src={previewFile}
+                alt="Preview"
+                style={{ maxWidth: '100%', maxHeight: '500px', margin: 'auto', display: 'block' }}
+              />
+            )}
+          </Modal.Body>
+          <Modal.Footer>
+            <a
+              className="btn btn-outline-primary"
+              href={previewFile}
+              download
+            >
+              Descargar
+            </a>
+            <Button variant="outline-secondary" onClick={handleClosePreview}>
+              Cerrar
+            </Button>
+          </Modal.Footer>
+        </Modal>
       )}
     </>
   );
@@ -181,6 +254,7 @@ const HallazgoList: React.FC = () => {
   const [auditorias, setAuditorias] = useState<{ id_Auditoria: number; nombre_Auditoria: string; nombreAuditoria: string }[]>([]);
   const [selectedAuditoria, setSelectedAuditoria] = useState<string>("");
   const [showModal, setShowModal] = useState(false);
+  const [showSeguimientoArchivosModal, setShowSeguimientoArchivosModal] = useState(false);
   const [selectedHallazgoId, setSelectedHallazgoId] = useState<number | undefined>(undefined);
   const [userRole, setUserRole] = useState<number | null>(null);
   const [userTyP, setUserTyP] = useState<number | null>(null);
@@ -270,6 +344,11 @@ const HallazgoList: React.FC = () => {
     setShowModal(true);
   };
 
+  const handleOpenSeguimientoArchivosModal = (id: number) => {
+    setSelectedHallazgoId(id);
+    setShowSeguimientoArchivosModal(true);
+  };
+
   const getEmpresaName = (idEmpresa: number) => {
     const empresa = empresas.find((e) => e.id_Empresas === idEmpresa);
     return empresa ? empresa.nombreEmpresa : "";
@@ -302,7 +381,6 @@ const HallazgoList: React.FC = () => {
         Hallazgos
       </h2>
       <br />
-      {/* Mostrar filtro solo para roles 1, 2 y 3 */}
       {[1, 2, 3].includes(userRole as number) && (
         <div className="d-flex justify-content-between mb-4">
           <select
@@ -330,12 +408,13 @@ const HallazgoList: React.FC = () => {
               <th>Actividad</th>
               <th>Cumplido</th>
               <th>Detalles</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
             {filteredHallazgos.map((h, index) => (
               <React.Fragment key={h.iD_Hallazgo ?? `fallback-${index}`}>
-                <tr className="table-row align-middle">
+                <tr className="align-middle">
                   <td>{h.nombre_Auditoria}</td>
                   <td>{getEmpresaName(h.idEmpresa)}</td>
                   <td>{h.nombre_Proceso}</td>
@@ -359,9 +438,50 @@ const HallazgoList: React.FC = () => {
                       {openRows.includes(h.iD_Hallazgo ?? index) ? <FaChevronUp /> : <FaChevronDown />}
                     </Button>
                   </td>
+                  <td>
+                    <div className="d-flex gap-2">
+                      {userRole !== 5 && userRole !== 6 && (
+                        <>
+                          {userRole === 4 ? (
+                            <Button
+                              variant="outline-primary"
+                              size="sm"
+                              onClick={() => handleOpenModal(h.iD_Hallazgo)}
+                            >
+                              Editar Seguimiento
+                            </Button>
+                          ) : (
+                            <>
+                              <Button
+                                variant="outline-primary"
+                                size="sm"
+                                onClick={() => handleOpenModal(h.iD_Hallazgo)}
+                              >
+                                <FaEdit className="me-1" />
+                              </Button>
+                              <Button
+                                variant="outline-danger"
+                                size="sm"
+                                onClick={() => handleDelete(h.iD_Hallazgo)}
+                              >
+                                <FaTrash className="me-1" />
+                              </Button>
+                            </>
+                          )}
+                        </>
+                      )}
+                      <Button
+                        variant="outline-success"
+                        size="sm"
+                        onClick={() => handleOpenSeguimientoArchivosModal(h.iD_Hallazgo)}
+                      >
+                        <FaFileAlt className="me-1" /> Ver Seguimiento
+                      </Button>
+                    </div>
+                  </td>
                 </tr>
                 <tr>
-                  <td colSpan={6}>
+                  <td colSpan={7}>
                     <Collapse in={openRows.includes(h.iD_Hallazgo ?? index)}>
                       <div className="p-3 bg-light border rounded">
                         <div className="row">
@@ -407,8 +527,8 @@ const HallazgoList: React.FC = () => {
                             <span className="mt-2">
                               {h.planAccion && (
                                 <ModalSeguimiento
-                                  seguimiento={h.seguimiento || "No hay seguimiento"}
                                   planAccion={h.planAccion}
+                                  seguimiento={h.seguimiento || ""}
                                   titulo="Plan de Acción y Seguimiento"
                                 />
                               )}
@@ -423,38 +543,6 @@ const HallazgoList: React.FC = () => {
                           <div className="col-md-4 d-flex flex-column align-items-center text-center">
                             <strong>Fecha de Compromiso</strong>
                             <span className="mt-2">{h.fechaCompromiso}</span>
-                          </div>
-                          <div className="col-md-4 d-flex flex-column align-items-center text-center">
-                            {userRole !== 5 && userRole !== 6 && (
-                              <>
-                                <strong>Acciones</strong>
-                                <div className="mt-2 d-flex gap-2">
-                                  {userRole === 4 ? (
-                                    <button
-                                      onClick={() => handleOpenModal(h.iD_Hallazgo)}
-                                      className="btn btn-outline-primary btn-sm"
-                                    >
-                                      Editar Seguimiento
-                                    </button>
-                                  ) : (
-                                    <>
-                                      <button
-                                        onClick={() => handleOpenModal(h.iD_Hallazgo)}
-                                        className="btn btn-outline-primary btn-sm"
-                                      >
-                                        <FaEdit className="me-1" />
-                                      </button>
-                                      <button
-                                        onClick={() => handleDelete(h.iD_Hallazgo)}
-                                        className="btn btn-outline-danger btn-sm"
-                                      >
-                                        <FaTrash className="me-1" />
-                                      </button>
-                                    </>
-                                  )}
-                                </div>
-                              </>
-                            )}
                           </div>
                         </div>
                       </div>
@@ -474,6 +562,14 @@ const HallazgoList: React.FC = () => {
           handleClose={() => setShowModal(false)}
           onHallazgoSaved={fetchHallazgos}
           userRole={userRole ?? undefined}
+        />
+      )}
+
+      {showSeguimientoArchivosModal && selectedHallazgoId && (
+        <SeguimientoArchivosModal
+          idHallazgo={selectedHallazgoId}
+          show={showSeguimientoArchivosModal}
+          handleClose={() => setShowSeguimientoArchivosModal(false)}
         />
       )}
     </div>

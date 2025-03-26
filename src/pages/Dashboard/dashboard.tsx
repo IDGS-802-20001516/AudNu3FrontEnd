@@ -105,9 +105,9 @@ const Dashboard: React.FC = () => {
           pauseOnHover: true,
           toastId: "pendientes-toast",
           style: {
-            background: "#00913f",
+            background: "#BDECB6",
             fontFamily: 'cursive', 
-            color: "#fff",        // Color del texto blanco
+            color: "black",        // Color del texto blanco
           },
         });
       }

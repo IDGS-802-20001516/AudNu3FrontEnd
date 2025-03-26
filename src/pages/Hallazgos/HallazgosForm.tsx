@@ -3,7 +3,7 @@ import { Modal, Form, Button, Row, Col } from "react-bootstrap";
 import { getHallazgoById, createHallazgo, updateHallazgo } from "../../services/HallazgosService";
 import { Hallazgo } from "../../services/HallazgosService";
 import { getUsuario } from "../../services/HallazgosService";
-
+import { uploadArchivoSeguimiento } from "../../services/HallazgosService";
 interface HallazgoFormModalProps {
   idHallazgo?: number;
   idActividad?: number;
@@ -23,7 +23,7 @@ const HallazgoForm: React.FC<HallazgoFormModalProps> = ({
   show,
   handleClose,
   onHallazgoSaved,
-  userRole, // Recibir el rol del usuario
+  userRole,
 }) => {
   const [hallazgo, setHallazgo] = useState<Hallazgo>({
     idHallazgo: 0,
@@ -36,11 +36,13 @@ const HallazgoForm: React.FC<HallazgoFormModalProps> = ({
     riesgo: "",
     recomendaciones: "",
     planAccion: "",
+    seguimiento: "",
     fechaCompromiso: "",
     cumplido: false,
-    seguimiento: "",
+    archivosSeguimiento: [],
   });
 
+  
   const [usuarios, setUsuarios] = useState<{ idUsuario: number; nombreUsuario: string; idRol: number }[]>([]);
   const responsablesFiltrados = usuarios.filter(
     (usuario) => usuario.idRol === 4 || usuario.idRol === 5 
@@ -73,6 +75,14 @@ const HallazgoForm: React.FC<HallazgoFormModalProps> = ({
     }
   };
 
+  const [files, setFiles] = useState<File[]>([]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setFiles(Array.from(e.target.files));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -83,11 +93,20 @@ const HallazgoForm: React.FC<HallazgoFormModalProps> = ({
         idActividad: hallazgo.idActividad || 0,
       };
 
+      let savedHallazgo: Hallazgo;
       if (idHallazgo) {
-        await updateHallazgo(idHallazgo, hallazgoParaEnviar);
+        savedHallazgo = await updateHallazgo(idHallazgo, hallazgoParaEnviar);
       } else {
-        await createHallazgo(hallazgoParaEnviar);
+        savedHallazgo = await createHallazgo(hallazgoParaEnviar);
       }
+
+      // Subir archivos si los hay
+      if (files.length > 0 && userRole === 4) {
+        for (const file of files) {
+          await uploadArchivoSeguimiento(savedHallazgo.idHallazgo, file);
+        }
+      }
+
       onHallazgoSaved();
       handleClose();
     } catch (error) {
@@ -107,7 +126,7 @@ const HallazgoForm: React.FC<HallazgoFormModalProps> = ({
 
   return (
     <Modal show={show} onHide={handleClose} size="lg" centered>
-      <Modal.Header closeButton  style={{ backgroundColor: "#800020", color: "white" }}>
+      <Modal.Header closeButton style={{ backgroundColor: "#800020", color: "white" }}>
         <Modal.Title className="fw-bold">
           {hallazgo.idHallazgo ? "Actualizar Hallazgo" : "Nuevo Hallazgo"}
         </Modal.Title>
@@ -268,17 +287,24 @@ const HallazgoForm: React.FC<HallazgoFormModalProps> = ({
 
           {/* Seguimiento (habilitado solo para rol 4) */}
           <Form.Group className="mb-3">
-            <Form.Label >Seguimiento</Form.Label>
-            <Form.Control
-              as="textarea"
-              name="seguimiento"
-              value={hallazgo.seguimiento}
-              onChange={handleChange}
-              disabled={userRole !== 4} // Habilitado solo para rol 4
-              
-              style={{ height: "100px", resize: "none" }}
-            />
-          </Form.Group>
+              <Form.Label>Seguimiento</Form.Label>
+              <Form.Control
+                as="textarea"
+                name="seguimiento"
+                value={hallazgo.seguimiento}
+                onChange={handleChange}
+                disabled={userRole !== 4}
+              />
+            </Form.Group>
+          <Form.Group className="mb-3">
+              <Form.Label>Archivos de Seguimiento</Form.Label>
+              <Form.Control
+                type="file"
+                multiple
+                onChange={handleFileChange}
+                disabled={userRole !== 4}
+              />
+            </Form.Group>
 
           <div className="d-flex justify-content-between mt-4">
             <Button variant="outline-secondary" onClick={handleClose} className="px-4 rounded-3 shadow-sm">
