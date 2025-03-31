@@ -1,9 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { Modal, Form, Button, Row, Col } from "react-bootstrap";
-import { getHallazgoById, createHallazgo, updateHallazgo } from "../../services/HallazgosService";
+import {
+  getHallazgoById,
+  createHallazgo,
+  updateHallazgo,
+  uploadArchivoSeguimiento,
+  uploadArchivoAnexo,
+} from "../../services/HallazgosService";
 import { Hallazgo } from "../../services/HallazgosService";
 import { getUsuario } from "../../services/HallazgosService";
-import { uploadArchivoSeguimiento } from "../../services/HallazgosService";
+
 interface HallazgoFormModalProps {
   idHallazgo?: number;
   idActividad?: number;
@@ -42,24 +48,35 @@ const HallazgoForm: React.FC<HallazgoFormModalProps> = ({
     archivosSeguimiento: [],
   });
 
-  
-  const [usuarios, setUsuarios] = useState<{ idUsuario: number; nombreUsuario: string; idRol: number }[]>([]);
+  const [usuarios, setUsuarios] = useState<
+    { idUsuario: number; nombreUsuario: string; idRol: number }[]
+  >([]);
   const responsablesFiltrados = usuarios.filter(
-    (usuario) => usuario.idRol === 4 || usuario.idRol === 5 
+    (usuario) => usuario.idRol === 4 || usuario.idRol === 5
   );
+
+  const [filesSeguimiento, setFilesSeguimiento] = useState<File[]>([]);
+  const [filesAnexos, setFilesAnexos] = useState<File[]>([]);
+
   useEffect(() => {
     fetchUsuarios();
     if (idHallazgo) {
       fetchHallazgo(idHallazgo);
     } else {
-      setHallazgo((prev) => ({ ...prev, idPlanAuditoria: idPlanAuditoria || 0, idActividad: idActividad || 0 }));
+      setHallazgo((prev) => ({
+        ...prev,
+        idPlanAuditoria: idPlanAuditoria || 0,
+        idActividad: idActividad || 0,
+      }));
     }
   }, [idHallazgo, idPlanAuditoria, idActividad]);
 
   const fetchHallazgo = async (id: number) => {
     try {
       const data = await getHallazgoById(id);
-      const fechaFormateada = data.fechaCompromiso ? data.fechaCompromiso.split("T")[0] : "";
+      const fechaFormateada = data.fechaCompromiso
+        ? data.fechaCompromiso.split("T")[0]
+        : "";
       setHallazgo({ ...data, fechaCompromiso: fechaFormateada });
     } catch (error) {
       console.error("Error al obtener el hallazgo:", error);
@@ -75,11 +92,17 @@ const HallazgoForm: React.FC<HallazgoFormModalProps> = ({
     }
   };
 
-  const [files, setFiles] = useState<File[]>([]);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSeguimientoChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     if (e.target.files) {
-      setFiles(Array.from(e.target.files));
+      setFilesSeguimiento(Array.from(e.target.files));
+    }
+  };
+
+  const handleFileAnexoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setFilesAnexos(Array.from(e.target.files));
     }
   };
 
@@ -100,10 +123,17 @@ const HallazgoForm: React.FC<HallazgoFormModalProps> = ({
         savedHallazgo = await createHallazgo(hallazgoParaEnviar);
       }
 
-      // Subir archivos si los hay
-      if (files.length > 0 && userRole === 4) {
-        for (const file of files) {
+      // Subir archivos de seguimiento (solo rol 4)
+      if (filesSeguimiento.length > 0 && userRole === 4) {
+        for (const file of filesSeguimiento) {
           await uploadArchivoSeguimiento(savedHallazgo.idHallazgo, file);
+        }
+      }
+
+      // Subir anexos de descripción (roles distintos de 4)
+      if (filesAnexos.length > 0 && userRole !== 4) {
+        for (const file of filesAnexos) {
+          await uploadArchivoAnexo(savedHallazgo.idHallazgo, file);
         }
       }
 
@@ -114,7 +144,11 @@ const HallazgoForm: React.FC<HallazgoFormModalProps> = ({
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
+  ) => {
     const { name, value } = e.target;
     setHallazgo({ ...hallazgo, [name]: value });
   };
@@ -133,13 +167,11 @@ const HallazgoForm: React.FC<HallazgoFormModalProps> = ({
       </Modal.Header>
       <Modal.Body>
         <Form onSubmit={handleSubmit}>
-          {/* Campos ocultos para idPlanAuditoria e idActividad */}
           <input type="hidden" name="idPlanAuditoria" value={hallazgo.idPlanAuditoria} />
           <input type="hidden" name="idActividad" value={hallazgo.idActividad} />
 
           <Row>
             <Col md={6}>
-              {/* Monto de Impacto (deshabilitado para rol 4) */}
               <Form.Group className="mb-3">
                 <Form.Label>Monto de Impacto</Form.Label>
                 <Form.Control
@@ -148,21 +180,18 @@ const HallazgoForm: React.FC<HallazgoFormModalProps> = ({
                   value={hallazgo.montoImpacto}
                   onChange={handleChange}
                   required
-                  disabled={userRole === 4} // Deshabilitado para rol 4
-                  
+                  disabled={userRole === 4}
                 />
               </Form.Group>
 
-              {/* Semáforo (deshabilitado para rol 4) */}
               <Form.Group className="mb-3">
-                <Form.Label >Semáforo</Form.Label>
+                <Form.Label>Semáforo</Form.Label>
                 <Form.Select
                   name="semaforo"
                   value={hallazgo.semaforo}
                   onChange={handleChange}
                   required
-                  disabled={userRole === 4} // Deshabilitado para rol 4
-                 
+                  disabled={userRole === 4}
                 >
                   <option value="">Seleccione un semáforo</option>
                   <option value="NCA">NCA (No Conformidad Alta)</option>
@@ -174,29 +203,25 @@ const HallazgoForm: React.FC<HallazgoFormModalProps> = ({
               </Form.Group>
             </Col>
             <Col md={6}>
-              {/* Fecha de Compromiso (deshabilitado para rol 4) */}
               <Form.Group className="mb-3">
-                <Form.Label >Fecha de Compromiso</Form.Label>
+                <Form.Label>Fecha de Compromiso</Form.Label>
                 <Form.Control
                   type="date"
                   name="fechaCompromiso"
                   value={hallazgo.fechaCompromiso || ""}
                   onChange={handleChange}
-                  disabled={userRole === 4} // Deshabilitado para rol 4
-                  
+                  disabled={userRole === 4}
                 />
               </Form.Group>
 
-              {/* Responsable (deshabilitado para rol 4) */}
               <Form.Group className="mb-3">
-                <Form.Label >Responsable</Form.Label>
+                <Form.Label>Responsable</Form.Label>
                 <Form.Select
                   name="idResponsable"
                   value={hallazgo.idResponsable}
                   onChange={handleChange}
                   required
-                  disabled={userRole === 4} // Deshabilitado para rol 4
-                 
+                  disabled={userRole === 4}
                 >
                   <option value="">Seleccione un Responsable</option>
                   {responsablesFiltrados.map((usr) => (
@@ -207,25 +232,22 @@ const HallazgoForm: React.FC<HallazgoFormModalProps> = ({
                 </Form.Select>
               </Form.Group>
 
-              {/* Cumplido (deshabilitado para rol 4) */}
               <Form.Group className="mb-3">
-                <Form.Label >Cumplido</Form.Label>
+                <Form.Label>Cumplido</Form.Label>
                 <Form.Check
                   type="checkbox"
                   name="cumplido"
                   checked={hallazgo.cumplido}
                   onChange={handleCheckboxChange}
-                  disabled={userRole === 4} // Deshabilitado para rol 4
+                  disabled={userRole === 4}
                   className="form-check-input"
                 />
               </Form.Group>
             </Col>
           </Row>
 
-          {/* Campos de texto grandes en dos columnas */}
           <Row>
             <Col md={6}>
-              {/* Descripción (deshabilitado para rol 4) */}
               <Form.Group className="mb-3">
                 <Form.Label>Descripción</Form.Label>
                 <Form.Control
@@ -234,83 +256,94 @@ const HallazgoForm: React.FC<HallazgoFormModalProps> = ({
                   value={hallazgo.descripcion}
                   onChange={handleChange}
                   required
-                  disabled={userRole === 4} // Deshabilitado para rol 4
-                  
+                  disabled={userRole === 4}
                   style={{ height: "100px", resize: "none" }}
                 />
               </Form.Group>
 
-              {/* Riesgo (deshabilitado para rol 4) */}
               <Form.Group className="mb-3">
-                <Form.Label >Riesgo</Form.Label>
+                <Form.Label>Riesgo</Form.Label>
                 <Form.Control
                   as="textarea"
                   name="riesgo"
                   value={hallazgo.riesgo}
                   onChange={handleChange}
-                  disabled={userRole === 4} // Deshabilitado para rol 4
-                
+                  disabled={userRole === 4}
                   style={{ height: "100px", resize: "none" }}
                 />
               </Form.Group>
             </Col>
             <Col md={6}>
-              {/* Recomendaciones (deshabilitado para rol 4) */}
               <Form.Group className="mb-3">
-                <Form.Label >Recomendaciones</Form.Label>
+                <Form.Label>Recomendaciones</Form.Label>
                 <Form.Control
                   as="textarea"
                   name="recomendaciones"
                   value={hallazgo.recomendaciones}
                   onChange={handleChange}
-                  disabled={userRole === 4} // Deshabilitado para rol 4
-                  
+                  disabled={userRole === 4}
                   style={{ height: "100px", resize: "none" }}
                 />
               </Form.Group>
 
-              {/* Plan de Acción (deshabilitado para rol 4) */}
               <Form.Group className="mb-3">
-                <Form.Label >Plan de Acción</Form.Label>
+                <Form.Label>Plan de Acción</Form.Label>
                 <Form.Control
                   as="textarea"
                   name="planAccion"
                   value={hallazgo.planAccion}
                   onChange={handleChange}
-                  disabled={userRole === 4} // Deshabilitado para rol 4
-                  
+                  disabled={userRole === 4}
                   style={{ height: "100px", resize: "none" }}
                 />
               </Form.Group>
             </Col>
           </Row>
 
-          {/* Seguimiento (habilitado solo para rol 4) */}
           <Form.Group className="mb-3">
-              <Form.Label>Seguimiento</Form.Label>
-              <Form.Control
-                as="textarea"
-                name="seguimiento"
-                value={hallazgo.seguimiento}
-                onChange={handleChange}
-                disabled={userRole !== 4}
-              />
-            </Form.Group>
+            <Form.Label>Seguimiento</Form.Label>
+            <Form.Control
+              as="textarea"
+              name="seguimiento"
+              value={hallazgo.seguimiento}
+              onChange={handleChange}
+              disabled={userRole !== 4}
+            />
+          </Form.Group>
+
           <Form.Group className="mb-3">
-              <Form.Label>Archivos de Seguimiento</Form.Label>
-              <Form.Control
-                type="file"
-                multiple
-                onChange={handleFileChange}
-                disabled={userRole !== 4}
-              />
-            </Form.Group>
+            <Form.Label>Archivos de Seguimiento</Form.Label>
+            <Form.Control
+              type="file"
+              multiple
+              onChange={handleFileSeguimientoChange}
+              disabled={userRole !== 4}
+            />
+          </Form.Group>
+
+          <Form.Group className="mb-3">
+            <Form.Label>Anexos de Descripción</Form.Label>
+            <Form.Control
+              type="file"
+              multiple
+              onChange={handleFileAnexoChange}
+              disabled={userRole === 4}
+            />
+          </Form.Group>
 
           <div className="d-flex justify-content-between mt-4">
-            <Button variant="outline-secondary" onClick={handleClose} className="px-4 rounded-3 shadow-sm">
+            <Button
+              variant="outline-secondary"
+              onClick={handleClose}
+              className="px-4 rounded-3 shadow-sm"
+            >
               Cancelar
             </Button>
-            <Button type="submit" variant="primary" className="px-4 rounded-3 shadow-sm">
+            <Button
+              type="submit"
+              variant="primary"
+              className="px-4 rounded-3 shadow-sm"
+            >
               Guardar
             </Button>
           </div>

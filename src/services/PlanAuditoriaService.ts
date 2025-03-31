@@ -17,6 +17,57 @@ export interface PlanAuditoria {
   estatus: boolean;
 }
 
+export const createBulkPlanAuditoriaByProcess = async (idAuditoria: number, idProceso: number): Promise<PlanAuditoria[]> => {
+  try {
+    const response = await fetch(`${ENDPOINTS.PLAN_AUDITORIA}/bulk/by-process/${idAuditoria}/${idProceso}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      Swal.fire('Error', errorText || 'Error al crear los planes por proceso', 'error');
+      throw new Error(errorText || 'Error al crear los planes por proceso');
+    }
+
+    const data = await response.json();
+    Swal.fire('Éxito', 'Planes de auditoría creados para el proceso seleccionado', 'success');
+    return data;
+  } catch (error) {
+    Swal.fire('Error', (error as Error).message, 'error');
+    throw error;
+  }
+};
+
+export const createBulkPlanAuditoriaAllActivities = async (idAuditoria: number): Promise<PlanAuditoria[]> => {
+  try {
+    const response = await fetch(`${ENDPOINTS.PLAN_AUDITORIA}/bulk/all-activities/${idAuditoria}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      Swal.fire('Error', errorText || 'Error al crear los planes para todas las actividades', 'error');
+      throw new Error(errorText || 'Error al crear los planes para todas las actividades');
+    }
+
+    const data = await response.json();
+    Swal.fire('Éxito', 'Planes de auditoría creados para todas las actividades', 'success');
+    return data;
+  } catch (error) {
+    Swal.fire('Error', (error as Error).message, 'error');
+    throw error;
+  }
+};
+
+// Define el tipo para BulkPlanAuditoriaDTO
+export interface BulkPlanAuditoriaDTO {
+  idAuditor: number;
+  fechaInicio: string;
+  fechaFin: string | null;
+  comentarios: string;
+}
 
 
 // Función genérica para manejar las peticiones
@@ -101,6 +152,12 @@ export const createPlanAuditoria = async (planAuditoria: Omit<PlanAuditoria, 'id
       body: JSON.stringify(planAuditoria),
     });
 
+    console.log("Response:", response); // Agrega este log para depuración
+    // Verifica si la respuesta es exitosa (código 2xx)     
+    // Si no es exitosa, lanza un error con el mensaje de error del servidor
+    // o un mensaje genérico si no hay texto en la respuesta
+    // Puedes ajustar el manejo de errores según tus necesidades
+    // o el formato de error que devuelve tu API
     if (!response.ok) {
       const errorText = await response.text();
       Swal.fire('Error', errorText || 'Error al crear el plan de auditoría', 'error');
@@ -132,6 +189,10 @@ export const savePlanAuditoria = async (planAuditoria: PlanAuditoria) => {
 
     const method = planAuditoria.idPlanAuditoria ? "PUT" : "POST";
 
+    console.log("Enviando solicitud a:", url); // Depuración
+    console.log("Método:", method); // Depuración
+    console.log("Cuerpo de la solicitud:", JSON.stringify(planAuditoria, null, 2)); // Depuración
+
     const response = await fetch(url, {
       method,
       headers: {
@@ -141,14 +202,15 @@ export const savePlanAuditoria = async (planAuditoria: PlanAuditoria) => {
     });
 
     if (!response.ok) {
-      Swal.fire('Error', `Error del servidor: ${response.status} - ${response.statusText}`, 'error');
-      throw new Error(`Error: ${response.status} - ${response.statusText}`);
+      const errorText = await response.text();
+      Swal.fire('Error', `Error del servidor: ${response.status} - ${errorText || response.statusText}`, 'error');
+      throw new Error(`Error: ${response.status} - ${errorText || response.statusText}`);
     }
 
     Swal.fire('Éxito', 'Plan de auditoría guardado correctamente', 'success');
     return await response.json();
   } catch (error) {
-    Swal.fire('Error', 'Error al guardar el plan de auditoría', 'error');
+    Swal.fire('Error', 'Error al guardar el plan de auditoría: ' + (error as Error).message, 'error');
     console.error("Error al guardar el plan de auditoría:", error);
     throw error;
   }
@@ -156,6 +218,8 @@ export const savePlanAuditoria = async (planAuditoria: PlanAuditoria) => {
 
 export const registrarHallazgo = async (hallazgo: { id_Auditoria: number; idProceso: number; descripcion: string }) => {
   try {
+    console.log("Datos enviados para registrar el hallazgo:", hallazgo);
+
     const response = await fetch("URL_DEL_BACKEND/hallazgos", {
       method: "POST",
       headers: {

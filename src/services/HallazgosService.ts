@@ -39,6 +39,66 @@ export interface VistaHallazgo {
   idEmpresa: number;
 }
 
+export interface ArchivoAnexo {
+  idArchivo: number;
+  rutaArchivo: string;
+  nombreArchivo: string;
+  tipoArchivo: string;
+}
+
+export const uploadArchivoAnexo = async (idHallazgo: number, file: File): Promise<void> => {
+  try {
+    const formData = new FormData();
+    formData.append("archivo", file);
+
+    const response = await fetch(`${ENDPOINTS.HALLAZGOS}/${idHallazgo}/anexos`, {
+      method: "POST",
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error("Error al subir el anexo");
+    }
+
+    Swal.fire("Éxito", "Anexo subido correctamente", "success");
+  } catch (error) {
+    Swal.fire("Error", (error as Error).message, "error");
+    throw error;
+  }
+};
+
+export const getArchivosAnexos = async (idHallazgo: number): Promise<ArchivoAnexo[]> => {
+  try {
+    const response = await fetch(`${ENDPOINTS.HALLAZGOS}/${idHallazgo}/anexos`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      },
+    });
+    if (!response.ok) {
+      throw new Error('Error al obtener los anexos');
+    }
+    return response.json();
+  } catch (error) {
+    Swal.fire('Error', (error as Error).message, 'error');
+    throw error;
+  }
+};
+
+export const deleteArchivoAnexo = async (idHallazgo: number, idArchivo: number): Promise<void> => {
+  const response = await fetch(`${ENDPOINTS.HALLAZGOS}/${idHallazgo}/anexos/${idArchivo}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('token')}`,
+    },
+  });
+  if (!response.ok) {
+    throw new Error('Error al eliminar el anexo');
+  }
+};
+
 export const uploadArchivoSeguimiento = async (idHallazgo: number, file: File): Promise<void> => {
   try {
     const formData = new FormData();

@@ -1,24 +1,124 @@
 import React, { useEffect, useState } from "react";
 import { Button, Collapse, Modal } from "react-bootstrap";
-import { getHallazgos, deleteHallazgo, VistaHallazgo, getAuditorias, getArchivosSeguimiento, deleteArchivoSeguimiento } from "../../services/HallazgosService";
+import {
+  getHallazgos,
+  deleteHallazgo,
+  VistaHallazgo,
+  getAuditorias,
+  getArchivosSeguimiento,
+  deleteArchivoSeguimiento,
+  getArchivosAnexos,
+  deleteArchivoAnexo,
+} from "../../services/HallazgosService";
 import HallazgoForm from "./HallazgosForm";
 import { useNavigate } from "react-router-dom";
 import "./HallazgosList.css";
 import { Empresa, getEmpresasAll } from "../../services/EmpresaService";
-import { FaEdit, FaTrash, FaEye, FaCheck, FaExclamation, FaChevronDown, FaChevronUp, FaFileAlt } from "react-icons/fa";
-import Swal from 'sweetalert2';
+import {
+  FaEdit,
+  FaTrash,
+  FaEye,
+  FaCheck,
+  FaExclamation,
+  FaChevronDown,
+  FaChevronUp,
+  FaFileAlt,
+} from "react-icons/fa";
+import Swal from "sweetalert2";
 import { ENDPOINTS } from "../../config/endpoints";
+import * as XLSX from "xlsx";
 
-// ModalInformacionCompleta remains unchanged
 const ModalInformacionCompleta: React.FC<{
   descripcion: string;
   riesgo: string;
   recomendaciones: string;
   titulo: string;
-}> = ({ descripcion, riesgo, recomendaciones, titulo }) => {
+  idHallazgo: number;
+  userRole?: number;
+}> = ({ descripcion, riesgo, recomendaciones, titulo, idHallazgo, userRole }) => {
   const [show, setShow] = useState(false);
+  const [anexos, setAnexos] = useState<
+    { idArchivo: number; rutaArchivo: string; nombreArchivo: string; tipoArchivo: string }[]
+  >([]);
+  const [previewData, setPreviewData] = useState<any[][] | null>(null);
+  const [previewFileUrl, setPreviewFileUrl] = useState<string | null>(null);
+  const [currentArchivoId, setCurrentArchivoId] = useState<number | null>(null); // Nuevo estado para el archivo actual
+
+  useEffect(() => {
+    if (show) {
+      const fetchAnexos = async () => {
+        try {
+          const data = await getArchivosAnexos(idHallazgo);
+          setAnexos(data);
+        } catch (error) {
+          console.error("Error al obtener anexos:", error);
+        }
+      };
+      fetchAnexos();
+    }
+  }, [show, idHallazgo]);
+
   const handleClose = () => setShow(false);
   const handleShow = () => setShow(true);
+
+  const handlePreview = async (idArchivo: number, tipoArchivo: string) => {
+    const url = `${ENDPOINTS.HALLAZGOS}/${idHallazgo}/anexos/${idArchivo}/descargar`;
+    setCurrentArchivoId(idArchivo); // Guardamos el id del archivo actual
+    if (tipoArchivo.startsWith("image/")) {
+      setPreviewFileUrl(url);
+      setPreviewData(null);
+    } else if (
+      tipoArchivo === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+      tipoArchivo === "application/vnd.ms-excel"
+    ) {
+      try {
+        const response = await fetch(url, {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        });
+        const arrayBuffer = await response.arrayBuffer();
+        const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: "array" });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        setPreviewData(jsonData as any[][]);
+        setPreviewFileUrl(null);
+      } catch (error) {
+        Swal.fire("Error", "No se pudo cargar la vista previa del archivo Excel", "error");
+      }
+    } else {
+      Swal.fire("Info", "La vista previa no está disponible para este tipo de archivo", "info");
+    }
+  };
+
+  const handleDeleteAnexo = async (idArchivo: number) => {
+    const result = await Swal.fire({
+      title: "¿Estás seguro?",
+      text: "No podrás revertir esta acción",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#800020",
+      cancelButtonColor: "#6c757d",
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await deleteArchivoAnexo(idHallazgo, idArchivo);
+        setAnexos(anexos.filter((anexo) => anexo.idArchivo !== idArchivo));
+        Swal.fire("Éxito", "El anexo se ha eliminado correctamente", "success");
+      } catch (error) {
+        console.error("Error al eliminar el anexo:", error);
+        Swal.fire("Error", "No se pudo eliminar el anexo", "error");
+      }
+    }
+  };
+
+  const handleClosePreview = () => {
+    setPreviewFileUrl(null);
+    setPreviewData(null);
+    setCurrentArchivoId(null); // Limpiamos el id del archivo
+  };
 
   return (
     <>
@@ -36,31 +136,123 @@ const ModalInformacionCompleta: React.FC<{
                 </div>
                 <div className="modal-body p-4">
                   <div className="card mb-4 border-0 shadow-sm">
-                    <div className="card-header bg-primary text-white rounded-top"><h5 className="mb-0">Descripción</h5></div>
-                    <div className="card-body p-3 bg-light"><p className="text-muted lead" style={{ whiteSpace: "pre-wrap" }}>{descripcion}</p></div>
+                    <div className="card-header bg-primary text-white rounded-top">
+                      <h5 className="mb-0">Descripción</h5>
+                    </div>
+                    <div className="card-body p-3 bg-light">
+                      <p className="text-muted lead" style={{ whiteSpace: "pre-wrap" }}>{descripcion}</p>
+                      {anexos.length > 0 && (
+                        <div className="mt-3">
+                          <h6>Anexos:</h6>
+                          <ul className="list-group">
+                            {anexos.map((anexo) => (
+                              <li
+                                key={anexo.idArchivo}
+                                className="list-group-item d-flex justify-content-between align-items-center"
+                              >
+                                <span>{anexo.nombreArchivo}</span>
+                                <div>
+                                  <Button
+                                    variant="outline-primary"
+                                    size="sm"
+                                    className="me-2"
+                                    onClick={() => handlePreview(anexo.idArchivo, anexo.tipoArchivo)}
+                                  >
+                                    <FaEye className="me-1" /> Ver
+                                  </Button>
+                                    {(userRole === 1 || userRole === 2) && (
+                                    <Button
+                                      variant="outline-danger"
+                                      size="sm"
+                                      onClick={() => handleDeleteAnexo(anexo.idArchivo)}
+                                    >
+                                      <FaTrash className="me-1" /> Eliminar 
+                                    </Button>
+                                  )}
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="card mb-4 border-0 shadow-sm">
-                    <div className="card-header bg-danger text-white rounded-top"><h5 className="mb-0">Riesgo</h5></div>
-                    <div className="card-body p-3 bg-light"><p className="text-warning lead" style={{ whiteSpace: "pre-wrap" }}>{riesgo}</p></div>
+                    <div className="card-header bg-danger text-white rounded-top">
+                      <h5 className="mb-0">Riesgo</h5>
+                    </div>
+                    <div className="card-body p-3 bg-light">
+                      <p className="text-warning lead" style={{ whiteSpace: "pre-wrap" }}>{riesgo}</p>
+                    </div>
                   </div>
                   <div className="card mb-0 border-0 shadow-sm">
-                    <div className="card-header bg-success text-white rounded-top"><h5 className="mb-0">Recomendaciones</h5></div>
-                    <div className="card-body p-3 bg-light"><p className="text-success lead" style={{ whiteSpace: "pre-wrap" }}>{recomendaciones}</p></div>
+                    <div className="card-header bg-success text-white rounded-top">
+                      <h5 className="mb-0">Recomendaciones</h5>
+                    </div>
+                    <div className="card-body p-3 bg-light">
+                      <p className="text-success lead" style={{ whiteSpace: "pre-wrap" }}>{recomendaciones}</p>
+                    </div>
                   </div>
                 </div>
                 <div className="modal-footer bg-light border-0 rounded-bottom-3">
-                  <button type="button" className="btn btn-outline-secondary btn-lg" onClick={handleClose}>Cerrar</button>
+                  <button type="button" className="btn btn-outline-secondary btn-lg" onClick={handleClose}>
+                    Cerrar
+                  </button>
                 </div>
               </div>
             </div>
           </div>
         </div>
       )}
+
+      {(previewFileUrl || previewData) && (
+        <Modal show={!!(previewFileUrl || previewData)} onHide={handleClosePreview} size="xl" centered>
+          <Modal.Header closeButton>
+            <Modal.Title>Vista Previa</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            {previewFileUrl ? (
+              <img
+                src={previewFileUrl}
+                alt="Preview"
+                style={{ maxWidth: "100%", maxHeight: "500px", margin: "auto", display: "block" }}
+              />
+            ) : previewData ? (
+              <div style={{ overflowX: "auto" }}>
+                <table className="table table-bordered">
+                  <tbody>
+                    {previewData.map((row, rowIndex) => (
+                      <tr key={rowIndex}>
+                        {row.map((cell, cellIndex) => (
+                          <td key={cellIndex}>{cell}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
+          </Modal.Body>
+          <Modal.Footer>
+            {currentArchivoId && (
+              <a
+                className="btn btn-outline-primary"
+                href={`${ENDPOINTS.HALLAZGOS}/${idHallazgo}/anexos/${currentArchivoId}/descargar`}
+                download
+              >
+                Descargar
+              </a>
+            )}
+            <Button variant="outline-secondary" onClick={handleClosePreview}>
+              Cerrar
+            </Button>
+          </Modal.Footer>
+        </Modal>
+      )}
     </>
   );
 };
 
-// ModalSeguimiento remains unchanged
 const ModalSeguimiento: React.FC<{
   planAccion: string;
   seguimiento: string;
@@ -87,20 +279,30 @@ const ModalSeguimiento: React.FC<{
                 </div>
                 <div className="modal-body p-4">
                   <div className="card mb-4 border-0 shadow-sm">
-                    <div className="card-header bg-primary text-white rounded-top"><h5 className="mb-0">Plan de Acción</h5></div>
+                    <div className="card-header bg-primary text-white rounded-top">
+                      <h5 className="mb-0">Plan de Acción</h5>
+                    </div>
                     <div className="card-body p-3 bg-light">
-                      <p className="text-muted lead" style={{ whiteSpace: "pre-wrap" }}>{planAccion || "No hay plan de acción"}</p>
+                      <p className="text-muted lead" style={{ whiteSpace: "pre-wrap" }}>
+                        {planAccion || "No hay plan de acción"}
+                      </p>
                     </div>
                   </div>
                   <div className="card mb-0 border-0 shadow-sm">
-                    <div className="card-header bg-success text-white rounded-top"><h5 className="mb-0">Seguimiento</h5></div>
+                    <div className="card-header bg-success text-white rounded-top">
+                      <h5 className="mb-0">Seguimiento</h5>
+                    </div>
                     <div className="card-body p-3 bg-light">
-                      <p className="text-success lead" style={{ whiteSpace: "pre-wrap" }}>{seguimiento || "No hay seguimiento"}</p>
+                      <p className="text-success lead" style={{ whiteSpace: "pre-wrap" }}>
+                        {seguimiento || "No hay seguimiento"}
+                      </p>
                     </div>
                   </div>
                 </div>
                 <div className="modal-footer bg-light border-0 rounded-bottom-3">
-                  <button type="button" className="btn btn-outline-success btn-lg" onClick={handleClose}>Cerrar</button>
+                  <button type="button" className="btn btn-outline-success btn-lg" onClick={handleClose}>
+                    Cerrar
+                  </button>
                 </div>
               </div>
             </div>
@@ -111,13 +313,14 @@ const ModalSeguimiento: React.FC<{
   );
 };
 
-// Updated SeguimientoArchivosModal with delete and preview functionality
 const SeguimientoArchivosModal: React.FC<{
   idHallazgo: number;
   show: boolean;
   handleClose: () => void;
 }> = ({ idHallazgo, show, handleClose }) => {
-  const [archivos, setArchivos] = useState<{ idArchivo: number; rutaArchivo: string; nombreArchivo: string; tipoArchivo: string }[]>([]);
+  const [archivos, setArchivos] = useState<
+    { idArchivo: number; rutaArchivo: string; nombreArchivo: string; tipoArchivo: string }[]
+  >([]);
   const [previewFile, setPreviewFile] = useState<string | null>(null);
 
   useEffect(() => {
@@ -150,7 +353,7 @@ const SeguimientoArchivosModal: React.FC<{
     if (result.isConfirmed) {
       try {
         await deleteArchivoSeguimiento(idHallazgo, idArchivo);
-        setArchivos(archivos.filter(archivo => archivo.idArchivo !== idArchivo));
+        setArchivos(archivos.filter((archivo) => archivo.idArchivo !== idArchivo));
         Swal.fire("Éxito", "El archivo se ha eliminado correctamente", "success");
       } catch (error) {
         console.error("Error al eliminar el archivo:", error);
@@ -160,7 +363,7 @@ const SeguimientoArchivosModal: React.FC<{
   };
 
   const handlePreview = (idArchivo: number, tipoArchivo: string) => {
-    if (tipoArchivo.startsWith('image/') || tipoArchivo === 'application/pdf') {
+    if (tipoArchivo.startsWith("image/") || tipoArchivo === "application/pdf") {
       setPreviewFile(`${ENDPOINTS.HALLAZGOS}/${idHallazgo}/archivos/${idArchivo}/descargar`);
     } else {
       Swal.fire("Info", "La vista previa no está disponible para este tipo de archivo", "info");
@@ -179,7 +382,10 @@ const SeguimientoArchivosModal: React.FC<{
           {archivos.length > 0 ? (
             <ul className="list-group">
               {archivos.map((archivo) => (
-                <li key={archivo.idArchivo} className="list-group-item d-flex justify-content-between align-items-center">
+                <li
+                  key={archivo.idArchivo}
+                  className="list-group-item d-flex justify-content-between align-items-center"
+                >
                   <span>{archivo.nombreArchivo}</span>
                   <div>
                     <Button
@@ -206,37 +412,34 @@ const SeguimientoArchivosModal: React.FC<{
           )}
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="outline-secondary" onClick={handleClose}>Cerrar</Button>
+          <Button variant="outline-secondary" onClick={handleClose}>
+            Cerrar
+          </Button>
         </Modal.Footer>
       </Modal>
 
-      {/* Preview Modal */}
       {previewFile && (
         <Modal show={!!previewFile} onHide={handleClosePreview} size="xl" centered>
           <Modal.Header closeButton>
             <Modal.Title>Vista Previa</Modal.Title>
           </Modal.Header>
           <Modal.Body>
-            {previewFile.endsWith('.pdf') ? (
+            {previewFile.endsWith(".pdf") ? (
               <iframe
                 src={previewFile}
-                style={{ width: '100%', height: '500px' }}
+                style={{ width: "100%", height: "500px" }}
                 title="PDF Preview"
               />
             ) : (
               <img
                 src={previewFile}
                 alt="Preview"
-                style={{ maxWidth: '100%', maxHeight: '500px', margin: 'auto', display: 'block' }}
+                style={{ maxWidth: "100%", maxHeight: "500px", margin: "auto", display: "block" }}
               />
             )}
           </Modal.Body>
           <Modal.Footer>
-            <a
-              className="btn btn-outline-primary"
-              href={previewFile}
-              download
-            >
+            <a className="btn btn-outline-primary" href={previewFile} download>
               Descargar
             </a>
             <Button variant="outline-secondary" onClick={handleClosePreview}>
@@ -251,7 +454,9 @@ const SeguimientoArchivosModal: React.FC<{
 
 const HallazgoList: React.FC = () => {
   const [hallazgos, setHallazgos] = useState<VistaHallazgo[]>([]);
-  const [auditorias, setAuditorias] = useState<{ id_Auditoria: number; nombre_Auditoria: string; nombreAuditoria: string }[]>([]);
+  const [auditorias, setAuditorias] = useState<
+    { id_Auditoria: number; nombre_Auditoria: string; nombreAuditoria: string }[]
+  >([]);
   const [selectedAuditoria, setSelectedAuditoria] = useState<string>("");
   const [showModal, setShowModal] = useState(false);
   const [showSeguimientoArchivosModal, setShowSeguimientoArchivosModal] = useState(false);
@@ -356,12 +561,18 @@ const HallazgoList: React.FC = () => {
 
   const getSemaforoColor = (semaforo: string) => {
     switch (semaforo) {
-      case "NCA": return "bg-dark text-white";
-      case "NCM": return "bg-danger text-white";
-      case "NCB": return "bg-warning text-dark";
-      case "OM": return "bg-success text-white";
-      case "C": return "bg-primary text-white";
-      default: return "bg-secondary text-white";
+      case "NCA":
+        return "bg-dark text-white";
+      case "NCM":
+        return "bg-danger text-white";
+      case "NCB":
+        return "bg-warning text-dark";
+      case "OM":
+        return "bg-success text-white";
+      case "C":
+        return "bg-primary text-white";
+      default:
+        return "bg-secondary text-white";
     }
   };
 
@@ -377,7 +588,7 @@ const HallazgoList: React.FC = () => {
 
   return (
     <div className="container mt-4">
-      <h2 style={{ fontFamily: 'revert-layer', color: "#800020", fontWeight: "bold", letterSpacing: "1px" }}>
+      <h2 style={{ fontFamily: "revert-layer", color: "#800020", fontWeight: "bold", letterSpacing: "1px" }}>
         Hallazgos
       </h2>
       <br />
@@ -431,10 +642,7 @@ const HallazgoList: React.FC = () => {
                     )}
                   </td>
                   <td>
-                    <Button
-                      variant="link"
-                      onClick={() => toggleRow(h.iD_Hallazgo ?? index)}
-                    >
+                    <Button variant="link" onClick={() => toggleRow(h.iD_Hallazgo ?? index)}>
                       {openRows.includes(h.iD_Hallazgo ?? index) ? <FaChevronUp /> : <FaChevronDown />}
                     </Button>
                   </td>
@@ -518,6 +726,8 @@ const HallazgoList: React.FC = () => {
                                   riesgo={h.riesgo}
                                   recomendaciones={h.recomendaciones}
                                   titulo="Información Completa"
+                                  idHallazgo={h.iD_Hallazgo}
+                                  userRole={userRole ?? undefined}
                                 />
                               )}
                             </span>
