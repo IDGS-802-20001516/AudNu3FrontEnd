@@ -42,7 +42,7 @@ const ModalInformacionCompleta: React.FC<{
   >([]);
   const [previewData, setPreviewData] = useState<any[][] | null>(null);
   const [previewFileUrl, setPreviewFileUrl] = useState<string | null>(null);
-  const [currentArchivoId, setCurrentArchivoId] = useState<number | null>(null); // Nuevo estado para el archivo actual
+  const [currentArchivoId, setCurrentArchivoId] = useState<number | null>(null);
 
   useEffect(() => {
     if (show) {
@@ -50,8 +50,24 @@ const ModalInformacionCompleta: React.FC<{
         try {
           const data = await getArchivosAnexos(idHallazgo);
           setAnexos(data);
+          if (data.length === 0) {
+            Swal.fire({
+              icon: 'info',
+              title: 'Sin anexos',
+              text: 'No hay anexos disponibles para este hallazgo',
+              timer: 2000,
+              showConfirmButton: false
+            });
+          }
         } catch (error) {
           console.error("Error al obtener anexos:", error);
+          Swal.fire({
+            icon: 'info',
+            title: 'Sin anexos',
+            text: 'No hay anexos disponibles para este hallazgo',
+            timer: 2000,
+            showConfirmButton: false
+          });
         }
       };
       fetchAnexos();
@@ -63,7 +79,7 @@ const ModalInformacionCompleta: React.FC<{
 
   const handlePreview = async (idArchivo: number, tipoArchivo: string) => {
     const url = `${ENDPOINTS.HALLAZGOS}/${idHallazgo}/anexos/${idArchivo}/descargar`;
-    setCurrentArchivoId(idArchivo); // Guardamos el id del archivo actual
+    setCurrentArchivoId(idArchivo);
     if (tipoArchivo.startsWith("image/")) {
       setPreviewFileUrl(url);
       setPreviewData(null);
@@ -117,7 +133,7 @@ const ModalInformacionCompleta: React.FC<{
   const handleClosePreview = () => {
     setPreviewFileUrl(null);
     setPreviewData(null);
-    setCurrentArchivoId(null); // Limpiamos el id del archivo
+    setCurrentArchivoId(null);
   };
 
   return (
@@ -160,7 +176,7 @@ const ModalInformacionCompleta: React.FC<{
                                   >
                                     <FaEye className="me-1" /> Ver
                                   </Button>
-                                    {(userRole === 1 || userRole === 2) && (
+                                  {(userRole === 1 || userRole === 2) && (
                                     <Button
                                       variant="outline-danger"
                                       size="sm"
@@ -329,9 +345,24 @@ const SeguimientoArchivosModal: React.FC<{
         try {
           const data = await getArchivosSeguimiento(idHallazgo);
           setArchivos(data);
+          if (data.length === 0) {
+            Swal.fire({
+              icon: 'info',
+              title: 'Sin archivos',
+              text: 'No hay archivos de seguimiento disponibles',
+              timer: 2000,
+              showConfirmButton: false
+            });
+          }
         } catch (error) {
           console.error("Error al obtener archivos:", error);
-          Swal.fire("Error", "No se pudieron cargar los archivos de seguimiento", "error");
+          Swal.fire({
+            icon: 'info',
+            title: 'Sin archivos',
+            text: 'No hay archivos de seguimiento disponibles',
+            timer: 2000,
+            showConfirmButton: false
+          });
         }
       };
       fetchArchivos();
@@ -523,7 +554,7 @@ const HallazgoList: React.FC = () => {
   const handleDelete = async (id: number) => {
     const result = await Swal.fire({
       title: "¿Estás seguro?",
-      text: "No podrás revertir esta acción",
+      text: "No unavailable No podrás revertir esta acción",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#800020",

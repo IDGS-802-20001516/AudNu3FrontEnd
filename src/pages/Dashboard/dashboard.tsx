@@ -23,29 +23,39 @@ const Dashboard: React.FC = () => {
   const [selectedAuditoria, setSelectedAuditoria] = useState<number>(0);
   const navigate = useNavigate();
 
+  // Función para cargar/refrescar datos
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [planes, usuarios, auditorias, procesos] = await Promise.all([
+        getPlanesAuditoria(),
+        getUsuarios(),
+        getAuditorias(),
+        getProcesos(),
+      ]);
+      const usuariosFiltrados = usuarios.filter(
+        (usuario: any) => usuario.idRol === 2 || usuario.idRol === 3
+      );
+      setUsuarios(usuariosFiltrados);
+      setAuditorias(auditorias);
+      setProcesos(procesos.filter((proceso) => proceso.idProceso !== undefined) as { idProceso: number; nombreProceso: string }[]);
+      
+      // Modificación: Incluir planes con idAuditor NULL
+      const planesFiltrados = planes.filter((plan) =>
+        plan.idAuditor === null || usuariosFiltrados.some((usuario) => usuario.idUsuario === plan.idAuditor)
+      );
+      setPlanAuditorias(planesFiltrados);
+    } catch (error) {
+      console.error("Error al cargar datos:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!localStorage.getItem("token")) navigate("/login");
+    fetchData(); // Cargar datos al montar el componente
   }, [navigate]);
-
-  useEffect(() => {
-    setLoading(true);
-    Promise.all([getPlanesAuditoria(), getUsuarios(), getAuditorias(), getProcesos()])
-      .then(([planes, usuarios, auditorias, procesos]) => {
-        const usuariosFiltrados = usuarios.filter(
-          (usuario: any) => usuario.idRol === 2 || usuario.idRol === 3
-        );
-        setUsuarios(usuariosFiltrados);
-        setAuditorias(auditorias);
-        setProcesos(procesos.filter((proceso) => proceso.idProceso !== undefined) as { idProceso: number; nombreProceso: string }[]);
-
-        const planesFiltrados = planes.filter((plan) =>
-          usuariosFiltrados.some((usuario) => usuario.idUsuario === plan.idAuditor)
-        );
-        setPlanAuditorias(planesFiltrados);
-      })
-      .catch((error) => console.error("Error al cargar datos:", error))
-      .finally(() => setLoading(false));
-  }, []);
 
   const auditoriasUnicas = useMemo(() => {
     return auditorias.map((auditoria) => ({
@@ -65,11 +75,18 @@ const Dashboard: React.FC = () => {
     const auditorCount: Record<number, number> = {};
 
     actividadesFiltradas.forEach(plan => {
-      estados[plan.estado as keyof typeof estados]++;
-      if (!auditorCount[plan.idAuditor]) {
+      const estado = plan.estado?.toLowerCase();
+      if (estado === "listo") {
+        estados.Listo++;
+      } else if (estado === "en proceso") {
+        estados["En Proceso"]++;
+      } else {
+        estados.Pendiente++; // Todo lo que no sea "Listo" ni "En Proceso" es "Pendiente"
+      }
+      if (plan.idAuditor && !auditorCount[plan.idAuditor]) { // Solo contar si idAuditor no es null
         auditorCount[plan.idAuditor] = 0;
       }
-      auditorCount[plan.idAuditor]++;
+      if (plan.idAuditor) auditorCount[plan.idAuditor]++;
     });
 
     return { estados, auditorCount };
@@ -92,8 +109,8 @@ const Dashboard: React.FC = () => {
           toastId: "pendientes-toast",
           style: {
             background: "#800020",
-            fontFamily: 'cursive', 
-            color: "#fff",        // Color del texto blanco
+            fontFamily: 'cursive',
+            color: "#fff",
           },
         });
       } else {
@@ -106,8 +123,8 @@ const Dashboard: React.FC = () => {
           toastId: "pendientes-toast",
           style: {
             background: "#BDECB6",
-            fontFamily: 'cursive', 
-            color: "black",        // Color del texto blanco
+            fontFamily: 'cursive',
+            color: "black",
           },
         });
       }
@@ -122,7 +139,10 @@ const Dashboard: React.FC = () => {
           (plan) => plan.idAuditor === usuario.idUsuario
         );
         const pendientes = actividadesAuditor.filter(
-          (plan) => plan.estado === "Pendiente"
+          (plan) => {
+            const estado = plan.estado?.toLowerCase();
+            return estado !== "listo" && estado !== "en proceso";
+          }
         ).length;
         return { ...usuario, pendientes };
       })
@@ -152,7 +172,6 @@ const Dashboard: React.FC = () => {
       "rgba(255, 159, 64, 0.6)",
     ];
 
-    // Filtrar usuarios con actividades mayores a 0
     const usuariosConActividades = usuariosOrdenados.filter(
       (usuario) => (preprocessedData.auditorCount[usuario.idUsuario] || 0) > 0
     );
@@ -173,7 +192,14 @@ const Dashboard: React.FC = () => {
     const data = { Pendiente: 0, "En Proceso": 0, Listo: 0 };
     actividadesFiltradas.forEach(plan => {
       if (plan.idAuditor === idAuditor) {
-        data[plan.estado as keyof typeof data]++;
+        const estado = plan.estado?.toLowerCase();
+        if (estado === "listo") {
+          data.Listo++;
+        } else if (estado === "en proceso") {
+          data["En Proceso"]++;
+        } else {
+          data.Pendiente++; // Todo lo que no sea "Listo" ni "En Proceso" es "Pendiente"
+        }
       }
     });
 
@@ -201,13 +227,13 @@ const Dashboard: React.FC = () => {
         estadoMap.set(nombreProceso, { Pendiente: 0, Listo: 0, "En Proceso": 0 });
       }
       const procesoData = estadoMap.get(nombreProceso)!;
-      const estado = plan.estado?.toLowerCase() || "";
-      if (estado === "pendiente") {
-        procesoData.Pendiente = (procesoData.Pendiente || 0) + 1;
-      } else if (estado === "listo") {
-        procesoData.Listo = (procesoData.Listo || 0) + 1;
+      const estado = plan.estado?.toLowerCase();
+      if (estado === "listo") {
+        procesoData.Listo++;
       } else if (estado === "en proceso") {
-        procesoData["En Proceso"] = (procesoData["En Proceso"] || 0) + 1;
+        procesoData["En Proceso"]++;
+      } else {
+        procesoData.Pendiente++; // Todo lo que no sea "Listo" ni "En Proceso" es "Pendiente"
       }
     });
 
@@ -323,7 +349,7 @@ const Dashboard: React.FC = () => {
                     options={{
                       plugins: {
                         legend: { position: "bottom" },
-                        datalabels: { display: false }, // Deshabilitar números en la gráfica
+                        datalabels: { display: false },
                       },
                       responsive: true,
                       maintainAspectRatio: false,
@@ -412,7 +438,7 @@ const Dashboard: React.FC = () => {
                           options={{
                             plugins: {
                               legend: { position: "bottom" },
-                              datalabels: { display: false }, // Deshabilitar números en la gráfica
+                              datalabels: { display: false },
                             },
                             responsive: true,
                             maintainAspectRatio: false,

@@ -80,7 +80,11 @@ export const getArchivosAnexos = async (idHallazgo: number): Promise<ArchivoAnex
     if (!response.ok) {
       throw new Error('Error al obtener los anexos');
     }
-    return response.json();
+    const anexos = await response.json();
+    if (anexos.length === 0) {
+      Swal.fire('Información', 'No hay anexos disponibles para este hallazgo', 'info');
+    }
+    return anexos;
   } catch (error) {
     Swal.fire('Error', (error as Error).message, 'error');
     throw error;
